@@ -121,7 +121,10 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
   return (
     <div className="space-y-4">
       {tiers.map((tier, index) => (
-        <div key={index} className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+        <div
+          key={index}
+          className="rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60"
+        >
           <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
             <Input
               label="Tier name"
@@ -162,13 +165,13 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
 
 export function PriceEditor({ priceModel, value, onChange }: PriceEditorProps) {
   if (!priceModel) {
-    return <p className="text-sm text-slate-400">Select a price model to configure pricing data.</p>;
+    return <p className="text-sm text-slate-500 dark:text-slate-400">Select a price model to configure pricing data.</p>;
   }
 
   if (priceModel === "token") {
     return (
       <Fragment>
-        <h4 className="text-sm font-semibold text-slate-200">Token pricing</h4>
+        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Token pricing</h4>
         {renderTokenPricing(value, onChange)}
       </Fragment>
     );
@@ -177,7 +180,7 @@ export function PriceEditor({ priceModel, value, onChange }: PriceEditorProps) {
   if (priceModel === "call") {
     return (
       <Fragment>
-        <h4 className="text-sm font-semibold text-slate-200">Per-call pricing</h4>
+        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Per-call pricing</h4>
         {renderCallPricing(value, onChange)}
       </Fragment>
     );
@@ -186,14 +189,14 @@ export function PriceEditor({ priceModel, value, onChange }: PriceEditorProps) {
   if (priceModel === "tiered") {
     return (
       <Fragment>
-        <h4 className="text-sm font-semibold text-slate-200">Tiered pricing</h4>
+        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Tiered pricing</h4>
         {renderTieredPricing(value, onChange)}
       </Fragment>
     );
   }
 
   return (
-    <div className="space-y-2 text-sm text-slate-400">
+    <div className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
       <p>Pricing editor for "{priceModel}" is not configured. Please update manually.</p>
       <Button type="button" variant="secondary" size="sm" onClick={() => onChange(null)}>
         Clear pricing data

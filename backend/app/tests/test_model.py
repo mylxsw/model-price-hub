@@ -17,6 +17,7 @@ MODEL_PAYLOAD = {
     "price_model": "token",
     "price_currency": "USD",
     "price_data": {"base": {"input_token_1m": 30.0, "output_token_1m": 60.0}},
+    "release_date": "2024-01-01",
     "note": "Flagship model",
     "license": ["commercial"],
     "status": "enabled",
@@ -40,6 +41,8 @@ def test_model_crud_and_public_access(client: TestClient, admin_headers: dict[st
     assert model["model"] == "gpt-4"
     assert model["vendor"]["id"] == vendor_id
     assert model["price_data"]["base"]["input_token_1m"] == 30.0
+    assert model["release_date"] == "2024-01-01"
+    assert "commercial" in model["license"]
 
     response = client.put(
         f"/api/admin/models/{model_id}",
@@ -59,6 +62,9 @@ def test_model_crud_and_public_access(client: TestClient, admin_headers: dict[st
     detail = response.json()
     assert detail["model"] == "gpt-4"
     assert detail["price_data"]["base"]["output_token_1m"] == 60.0
+    assert detail["release_date"] == "2024-01-01"
+    assert "analysis" in detail["model_capability"]
+    assert "commercial" in detail["license"]
 
     response = client.delete(f"/api/admin/models/{model_id}", headers=admin_headers)
     assert response.status_code == 204

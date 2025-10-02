@@ -1,3 +1,4 @@
+from datetime import date
 from enum import Enum
 from typing import Optional
 
@@ -27,6 +28,7 @@ class Model(DBModel, TimestampMixin, table=True):
     price_model: Optional[str] = None
     price_currency: Optional[str] = None
     price_data: Optional[str] = None
+    release_date: Optional[date] = Field(default=None, index=True)
     note: Optional[str] = None
     license: Optional[str] = None
     status: ModelStatus = Field(default=ModelStatus.enabled, index=True)

@@ -26,6 +26,7 @@ interface ModelFilters {
   capability?: string;
   license?: string;
   page?: number;
+  sort?: string;
 }
 
 export function useModels(filters: ModelFilters = {}) {
@@ -42,6 +43,7 @@ export function useModels(filters: ModelFilters = {}) {
       if (filters.priceCurrency) params.set("price_currency", filters.priceCurrency);
       if (filters.capability) params.set("capabilities", filters.capability);
       if (filters.license) params.set("license", filters.license);
+      if (filters.sort) params.set("sort", filters.sort);
       if (filters.page) params.set("page", String(filters.page));
       return client.get<ListResponse<any>>(`/api/public/models?${params.toString()}`);
     }
@@ -83,6 +85,25 @@ const FILTER_META_PAGE_SIZE = 100;
 export function useModelFilterOptions() {
   const client = new ApiClient();
 
+  const normalizeStringArray = (value: unknown): string[] => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    }
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+        }
+      } catch (error) {
+        // ignore parse errors and fall back to raw string
+      }
+      return value.trim() ? [value.trim()] : [];
+    }
+    return [];
+  };
+
   return useQuery<ModelFilterMetadata>({
     queryKey: ["model-filter-options"],
     queryFn: async () => {
@@ -119,23 +140,8 @@ export function useModelFilterOptions() {
       const licenseSet = new Set<string>();
 
       modelsItems.forEach((model) => {
-        const capabilities = Array.isArray(model?.model_capability)
-          ? model.model_capability
-          : typeof model?.model_capability === "string"
-            ? [model.model_capability]
-            : [];
-        capabilities
-          .filter((cap): cap is string => Boolean(cap))
-          .forEach((cap) => capabilitySet.add(cap));
-
-        const licenses = Array.isArray(model?.license)
-          ? model.license
-          : typeof model?.license === "string"
-            ? [model.license]
-            : [];
-        licenses
-          .filter((license): license is string => Boolean(license))
-          .forEach((license) => licenseSet.add(license));
+        normalizeStringArray(model?.model_capability).forEach((cap) => capabilitySet.add(cap));
+        normalizeStringArray(model?.license).forEach((license) => licenseSet.add(license));
       });
 
       return {

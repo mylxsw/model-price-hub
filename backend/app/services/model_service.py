@@ -68,6 +68,47 @@ class ModelService:
             data["price_data"] = _prepare_price_data(data["price_data"])
         return data
 
+    def _parse_price_data(self, value: Optional[str | dict]) -> Optional[dict]:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError:
+                return None
+            return parsed if isinstance(parsed, dict) else None
+        return None
+
+    def _price_sort_value(self, model: Model) -> Optional[float]:
+        data = self._parse_price_data(model.price_data)
+        if not data:
+            return None
+        model_type = model.price_model or ""
+        if model_type == "token":
+            base = data.get("base")
+            if isinstance(base, dict):
+                for key in ("input_token_1m", "output_token_1m", "input_token_cached_1m"):
+                    value = base.get(key)
+                    if isinstance(value, (int, float)):
+                        return float(value)
+        elif model_type == "call":
+            base = data.get("base")
+            if isinstance(base, dict):
+                price = base.get("price_per_call")
+                if isinstance(price, (int, float)):
+                    return float(price)
+        elif model_type == "tiered":
+            tiers = data.get("tiers")
+            if isinstance(tiers, list) and tiers:
+                first = tiers[0]
+                if isinstance(first, dict):
+                    price = first.get("price_per_unit")
+                    if isinstance(price, (int, float)):
+                        return float(price)
+        return None
+
     def list_models(
         self,
         session: Session,
@@ -86,10 +127,13 @@ class ModelService:
         license_values: Optional[Iterable[str]] = None,
         status: Optional[str] = None,
         search: Optional[str] = None,
+        sort: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
     ) -> Page[Model]:
         offset = (page - 1) * page_size
+        fetch_all = sort in {"price_asc", "price_desc"}
+        query_sort = None if fetch_all else sort
         models, total = repository.search(
             session,
             vendor_id=vendor_id,
@@ -107,7 +151,22 @@ class ModelService:
             search=search,
             offset=offset,
             limit=page_size,
+            sort=query_sort,
+            fetch_all=fetch_all,
         )
+
+        if fetch_all:
+            descending = sort == "price_desc"
+
+            def sort_key(model: Model) -> float:
+                value = self._price_sort_value(model)
+                if value is None:
+                    return float("-inf") if descending else float("inf")
+                return value
+
+            models = sorted(models, key=sort_key, reverse=descending)
+            models = models[offset : offset + page_size]
+
         return paginate(models, total, page, page_size)
 
     def _ensure_vendor(self, session: Session, vendor_id: int, vendor_service: VendorService, vendor_repo: VendorRepository) -> None:

@@ -31,9 +31,12 @@ export function TagInput({ label, values, onChange, placeholder }: TagInputProps
       <span className="text-sm font-medium text-slate-200">{label}</span>
       <div className="flex flex-wrap gap-2">
         {values.map((tag, index) => (
-          <span key={tag} className="inline-flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1 text-xs">
+          <span
+            key={tag}
+            className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
             {tag}
-            <button className="text-slate-400 hover:text-primary" onClick={() => removeTag(index)} type="button">
+            <button className="text-slate-500 transition hover:text-primary dark:text-slate-400" onClick={() => removeTag(index)} type="button">
               ×
             </button>
           </span>

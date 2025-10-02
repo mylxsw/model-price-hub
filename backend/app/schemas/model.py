@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, root_validator, validator
@@ -20,6 +20,7 @@ class ModelBase(BaseModel):
     price_model: Optional[str] = Field(default=None, alias="priceModel")
     price_currency: Optional[str] = Field(default=None, alias="priceCurrency")
     price_data: Optional[dict] = Field(default=None, alias="priceData")
+    release_date: Optional[date] = Field(default=None, alias="releaseDate")
     note: Optional[str] = None
     license: Optional[List[str]] = None
     status: ModelStatus = ModelStatus.enabled
@@ -54,6 +55,7 @@ class ModelUpdate(BaseModel):
     price_model: Optional[str] = None
     price_currency: Optional[str] = None
     price_data: Optional[dict] = None
+    release_date: Optional[date] = None
     note: Optional[str] = None
     license: Optional[List[str]] = None
     status: Optional[ModelStatus] = None
@@ -72,6 +74,7 @@ class ModelRead(ModelBase):
     vendor: VendorSummary
     created_at: datetime
     updated_at: datetime
+    release_date: Optional[date] = None
 
     class Config:
         orm_mode = True

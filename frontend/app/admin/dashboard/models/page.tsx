@@ -30,15 +30,19 @@ export default function AdminModelsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Models</h1>
-          <p className="text-sm text-slate-400">Manage catalog entries and their pricing structures.</p>
+          <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Models</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Manage catalog entries and their pricing structures.</p>
         </div>
         <Button onClick={() => router.push("/admin/dashboard/models/new")}>Add model</Button>
       </div>
       <Card
         title="Models"
         description="All catalog entries across vendors."
-        actions={<span className="text-xs text-slate-500">{isFetching ? "Refreshing..." : `${data?.total ?? 0} models`}</span>}
+        actions={
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {isFetching ? "Refreshing..." : `${data?.total ?? 0} models`}
+          </span>
+        }
       >
         <Table
           data={models}
@@ -47,16 +51,28 @@ export default function AdminModelsPage() {
               header: "Model",
               accessor: (model) => (
                 <div>
-                  <p className="font-medium text-slate-100">{model.model}</p>
-                  <p className="text-xs text-slate-400">{model.vendor?.name}</p>
+                  <p className="font-medium text-slate-800 dark:text-slate-100">{model.model}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{model.vendor?.name}</p>
                 </div>
               )
             },
             {
               header: "Pricing",
               accessor: (model) => (
-                <span className="text-xs uppercase text-slate-400">
+                <span className="text-xs uppercase text-slate-500 dark:text-slate-400">
                   {model.price_model ?? "n/a"} • {model.price_currency ?? ""}
+                </span>
+              )
+            },
+            {
+              header: "Release",
+              accessor: (model) => (
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {model.release_date
+                    ? new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" }).format(
+                        new Date(model.release_date)
+                      )
+                    : "—"}
                 </span>
               )
             },

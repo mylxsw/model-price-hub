@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from fastapi import Query
 
@@ -22,6 +22,7 @@ class ModelSearchParams:
         license: Optional[str] = Query(default=None),
         status: Optional[str] = Query(default=None),
         search: Optional[str] = Query(default=None),
+        sort: Optional[str] = Query(default=None),
         page: int = Query(default=1, ge=1),
         page_size: int = Query(default=20, ge=1, le=100),
     ) -> None:
@@ -38,10 +39,11 @@ class ModelSearchParams:
         self.license = parse_csv(license)
         self.status = status
         self.search = search
+        self.sort = sort
         self.page = page
         self.page_size = page_size
 
-    def dict(self) -> Dict[str, Optional[Iterable[str]]]:
+    def dict(self) -> Dict[str, Optional[Any]]:
         return {
             "vendor_id": self.vendor_id,
             "vendor_name": self.vendor_name,
@@ -56,6 +58,7 @@ class ModelSearchParams:
             "license_values": self.license,
             "status": self.status,
             "search": self.search,
+            "sort": self.sort,
             "page": self.page,
             "page_size": self.page_size,
         }
