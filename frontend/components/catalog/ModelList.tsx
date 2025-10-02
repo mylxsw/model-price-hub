@@ -2,16 +2,17 @@ import Link from "next/link";
 
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
+import { PriceDisplay } from "./PriceDisplay";
 
 export interface CatalogModel {
   id: number;
   model: string;
   description?: string;
   vendor: { id: number; name: string };
-  price_model?: string;
-  price_currency?: string;
-  model_capability?: unknown;
-  price_data?: Record<string, unknown>;
+  priceModel?: string;
+  priceCurrency?: string;
+  modelCapability?: unknown;
+  priceData?: Record<string, unknown>;
   license?: unknown;
   release_date?: string | null;
 }
@@ -52,21 +53,6 @@ const normalizeStringArray = (value: unknown): string[] => {
   return deduped;
 };
 
-const prettyPricing = (model: CatalogModel | Record<string, unknown>) => {
-  const priceModel = (model as any).price_model ?? (model as any).priceModel;
-  const currency = (model as any).price_currency ?? (model as any).priceCurrency ?? "";
-  if (!priceModel) return "Pricing unknown";
-  switch (priceModel) {
-    case "token":
-      return `${currency} per token`;
-    case "call":
-      return `${currency} per call`;
-    case "tiered":
-      return `${currency} tiered pricing`;
-    default:
-      return priceModel;
-  }
-};
 
 const formatReleaseDate = (value?: string | null) => {
   if (!value) return null;
@@ -83,21 +69,36 @@ export function ModelList({ models }: ModelListProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {models.map((model) => {
-        const capabilities = normalizeStringArray((model as any).model_capability ?? (model as any).modelCapability);
-        const licenses = normalizeStringArray((model as any).license ?? (model as any).licenses);
-        const releaseDate = formatReleaseDate((model as any).release_date ?? (model as any).releaseDate);
+        const capabilities = normalizeStringArray(model.modelCapability);
+        const licenses = normalizeStringArray(model.license);
+        const releaseDate = formatReleaseDate(model.release_date);
 
+        
         return (
           <Card
             key={model.id}
-            title={model.model}
+            title={
+              <Link
+                href={`/catalog/${model.id}`}
+                className="text-inherit transition-colors hover:text-primary hover:underline"
+              >
+                {model.model}
+              </Link>
+            }
             description={model.description}
             actions={<Badge color="primary">{model.vendor.name}</Badge>}
           >
             <div className="mt-4 flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <span>Pricing</span>
-                <span>{prettyPricing(model)}</span>
+                <PriceDisplay
+                  price={{
+                    price_model: model.priceModel,
+                    price_currency: model.priceCurrency,
+                    price_data: model.priceData
+                  }}
+                  variant="compact"
+                />
               </div>
               {releaseDate && (
                 <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">

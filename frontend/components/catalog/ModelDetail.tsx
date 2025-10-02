@@ -1,5 +1,6 @@
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
+import { PriceDisplay } from "./PriceDisplay";
 
 interface ModelDetailProps {
   model: {
@@ -50,44 +51,14 @@ const normalizeStringArray = (input?: unknown): string[] => {
   return deduped;
 };
 
-function renderPricing(priceData?: Record<string, unknown> | string) {
-  let data: Record<string, unknown> | null = null;
-
-  if (typeof priceData === "string") {
-    try {
-      data = JSON.parse(priceData) as Record<string, unknown>;
-    } catch (error) {
-      data = null;
-    }
-  } else {
-    data = priceData ?? null;
-  }
-
-  if (!data) return <p className="text-sm text-slate-500 dark:text-slate-400">No pricing data provided.</p>;
-  return (
-    <div className="space-y-3 text-sm">
-      {Object.entries(data).map(([tier, value]) => (
-        <div
-          key={tier}
-          className="rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60"
-        >
-          <h4 className="text-sm font-semibold text-slate-600 uppercase dark:text-slate-200">{tier}</h4>
-          <pre className="mt-2 overflow-x-auto text-xs text-slate-600 dark:text-slate-300">
-            {JSON.stringify(value, null, 2)}
-          </pre>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export function ModelDetail({ model }: ModelDetailProps) {
-  const capabilities = normalizeStringArray((model as any).model_capability ?? (model as any).modelCapability);
-  const licenses = normalizeStringArray((model as any).license ?? (model as any).licenses);
-  const releaseDateRaw = (model as any).release_date ?? (model as any).releaseDate;
-  const priceData = (model as any).price_data ?? (model as any).priceData;
+  const capabilities = normalizeStringArray((model as any).modelCapability);
+  const licenses = normalizeStringArray((model as any).license);
+  const releaseDateRaw = (model as any).release_date;
+  const priceData = (model as any).priceData;
   const releaseDate = releaseDateRaw ? new Date(releaseDateRaw) : null;
-  const modelUrl = (model as any).model_url ?? (model as any).modelUrl;
+  const modelUrl = (model as any).modelUrl;
 
   return (
     <div className="space-y-8">
@@ -125,8 +96,15 @@ export function ModelDetail({ model }: ModelDetailProps) {
           {model.note && <p className="text-sm text-slate-500 dark:text-slate-400">{model.note}</p>}
         </div>
       </Card>
-      <Card title="Pricing" description="Raw pricing data across tiers and token types.">
-        {renderPricing(priceData)}
+      <Card title="Pricing" description="Detailed pricing information across different tiers and usage models.">
+        <PriceDisplay
+          price={{
+            price_model: (model as any).priceModel,
+            price_currency: (model as any).priceCurrency,
+            price_data: priceData
+          }}
+          variant="detailed"
+        />
       </Card>
     </div>
   );

@@ -2,8 +2,8 @@ import { ReactNode } from "react";
 import classNames from "classnames";
 
 interface CardProps {
-  title?: string;
-  description?: string;
+  title?: ReactNode;
+  description?: ReactNode;
   children: ReactNode;
   className?: string;
   actions?: ReactNode;

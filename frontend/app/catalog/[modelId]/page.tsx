@@ -19,8 +19,10 @@ export default async function ModelDetailPage({ params }: { params: { modelId: s
   }
 
   return (
-    <div className="space-y-6">
-      <ModelDetail model={model} />
+    <div className="mx-auto w-full max-w-7xl px-4 py-8">
+      <div className="mx-auto w-full max-w-4xl">
+        <ModelDetail model={model} />
+      </div>
     </div>
   );
 }
