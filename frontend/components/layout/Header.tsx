@@ -4,14 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useAuthStore } from "../../lib/hooks/useAuth";
+import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
 import { Button } from "../ui/Button";
-import { ThemeToggle } from "./ThemeToggle";
 
 const navItems: Array<{ href: string; label: string }> = [];
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
 
 export function Header() {
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAuthStore();
+  const { toggle, isOpen } = useFilterPanelStore();
 
   const isAdminRoute = pathname?.startsWith("/admin");
 
@@ -39,7 +58,17 @@ export function Header() {
           </nav>
         )}
         <div className="flex items-center gap-2">
-          <ThemeToggle />
+          <Button
+            variant={isOpen ? "primary" : "ghost"}
+            size="sm"
+            onClick={toggle}
+            aria-label="Search and filter models"
+            aria-pressed={isOpen}
+            className="gap-2"
+          >
+            <SearchIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Filters</span>
+          </Button>
           {isAuthenticated && isAdminRoute && (
             <Button variant="secondary" size="sm" onClick={logout}>
               Logout

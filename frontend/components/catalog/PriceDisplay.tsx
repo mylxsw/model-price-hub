@@ -13,6 +13,7 @@ interface PriceDisplayProps {
 
 interface TokenPricing {
   input?: number;
+  cached?: number;
   output?: number;
   per: string;
   currency?: string;
@@ -55,21 +56,29 @@ const convertToPerMillion = (amount: unknown, per?: unknown): number | undefined
   return amount;
 };
 
-const parseTokenPricing = (priceData: unknown): TokenPricing | null => {
+const parseTokenPricing = (priceData: unknown, defaultCurrency: string): TokenPricing | null => {
   if (typeof priceData !== "object" || !priceData) return null;
 
   const data = priceData as Record<string, unknown>;
   const rootCurrency = typeof data.currency === "string" ? data.currency : undefined;
 
-  const buildResult = (input?: number, output?: number, currency?: string): TokenPricing | null => {
-    if (input === undefined && output === undefined) {
+  const buildResult = (values: {
+    input?: number;
+    output?: number;
+    cached?: number;
+    currency?: string;
+    per?: string;
+  }): TokenPricing | null => {
+    const { input, output, cached, currency, per } = values;
+    if (input === undefined && output === undefined && cached === undefined) {
       return null;
     }
-    const resolvedCurrency = currency ?? rootCurrency ?? "USD";
+    const resolvedCurrency = currency ?? rootCurrency ?? defaultCurrency ?? "USD";
     return {
       input,
       output,
-      per: MILLION_TOKEN_LABEL,
+      cached,
+      per: per ?? MILLION_TOKEN_LABEL,
       currency: resolvedCurrency
     };
   };
@@ -80,29 +89,40 @@ const parseTokenPricing = (priceData: unknown): TokenPricing | null => {
 
     const inputToken = base.input_token_1m;
     const outputToken = base.output_token_1m;
+    const cachedToken = base.input_token_cached_1m ?? base.cached_input_token_1m;
 
-    if (isNumber(inputToken) || isNumber(outputToken)) {
-      return buildResult(
-        isNumber(inputToken) ? inputToken : undefined,
-        isNumber(outputToken) ? outputToken : undefined,
-        baseCurrency
-      );
+    if (isNumber(inputToken) || isNumber(outputToken) || isNumber(cachedToken)) {
+      return buildResult({
+        input: isNumber(inputToken) ? inputToken : undefined,
+        output: isNumber(outputToken) ? outputToken : undefined,
+        cached: isNumber(cachedToken) ? cachedToken : undefined,
+        currency: baseCurrency
+      });
     }
 
     const baseInput = convertToPerMillion(base.input, base.per);
     const baseOutput = convertToPerMillion(base.output, base.per);
+    const baseCached = convertToPerMillion(base.cached, base.per);
 
-    const baseResult = buildResult(baseInput, baseOutput, baseCurrency);
+    const baseResult = buildResult({
+      input: baseInput,
+      output: baseOutput,
+      cached: baseCached,
+      currency: baseCurrency,
+      per: typeof base.per === "string" ? base.per : undefined
+    });
     if (baseResult) {
       return baseResult;
     }
   }
 
-  const directResult = buildResult(
-    convertToPerMillion(data.input, data.per),
-    convertToPerMillion(data.output, data.per),
-    rootCurrency
-  );
+  const directResult = buildResult({
+    input: convertToPerMillion(data.input, data.per),
+    output: convertToPerMillion(data.output, data.per),
+    cached: convertToPerMillion(data.cached, data.per),
+    currency: rootCurrency,
+    per: typeof data.per === "string" ? data.per : undefined
+  });
   if (directResult) {
     return directResult;
   }
@@ -110,11 +130,13 @@ const parseTokenPricing = (priceData: unknown): TokenPricing | null => {
   if (data.pricing && typeof data.pricing === "object") {
     const pricing = data.pricing as Record<string, unknown>;
     const pricingCurrency = typeof pricing.currency === "string" ? pricing.currency : undefined;
-    const pricingResult = buildResult(
-      convertToPerMillion(pricing.input, pricing.per),
-      convertToPerMillion(pricing.output, pricing.per),
-      pricingCurrency
-    );
+    const pricingResult = buildResult({
+      input: convertToPerMillion(pricing.input, pricing.per),
+      output: convertToPerMillion(pricing.output, pricing.per),
+      cached: convertToPerMillion(pricing.cached, pricing.per),
+      currency: pricingCurrency,
+      per: typeof pricing.per === "string" ? pricing.per : undefined
+    });
     if (pricingResult) {
       return pricingResult;
     }
@@ -224,42 +246,42 @@ export function PriceDisplay({ price, variant = "compact" }: PriceDisplayProps) 
 
   // Handle token-based pricing
   if (price_model.toLowerCase() === "token" || price_model.toLowerCase() === "tokens") {
-    const tokenPricing = parseTokenPricing(price_data);
+    const tokenPricing = parseTokenPricing(price_data, price_currency);
 
     if (variant === "compact") {
       if (tokenPricing) {
-        const { input, output, currency: tokenCurrency, per } = tokenPricing;
-        const currency = tokenCurrency || price_currency;
+        const currency = tokenPricing.currency || price_currency;
+        const entries = [
+          tokenPricing.input !== undefined
+            ? { label: "Input", value: formatTokenPrice(tokenPricing.input, currency) }
+            : null,
+          tokenPricing.cached !== undefined
+            ? { label: "Cached", value: formatTokenPrice(tokenPricing.cached, currency) }
+            : null,
+          tokenPricing.output !== undefined
+            ? { label: "Output", value: formatTokenPrice(tokenPricing.output, currency) }
+            : null
+        ].filter(Boolean) as Array<{ label: string; value: string }>;
 
-        if (input !== undefined && output !== undefined) {
+        if (entries.length > 0) {
           return (
-            <div className="text-xs">
-              <div className="font-medium text-slate-700 dark:text-slate-300">
-                {formatTokenPrice(input, currency)} - {formatTokenPrice(output, currency)}
+            <div className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-2">
+                {entries.map((entry) => (
+                  <span
+                    key={entry.label}
+                    className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      {entry.label}
+                    </span>
+                    {entry.value}
+                  </span>
+                ))}
               </div>
-              <div className="text-slate-500">per {per}</div>
-            </div>
-          );
-        }
-
-        if (input !== undefined) {
-          return (
-            <div className="text-xs">
-              <div className="font-medium text-slate-700 dark:text-slate-300">
-                {formatTokenPrice(input, currency)}
-              </div>
-              <div className="text-slate-500">per {per}</div>
-            </div>
-          );
-        }
-
-        if (output !== undefined) {
-          return (
-            <div className="text-xs">
-              <div className="font-medium text-slate-700 dark:text-slate-300">
-                {formatTokenPrice(output, currency)}
-              </div>
-              <div className="text-slate-500">per {per}</div>
+              <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                per {tokenPricing.per}
+              </span>
             </div>
           );
         }
@@ -267,38 +289,52 @@ export function PriceDisplay({ price, variant = "compact" }: PriceDisplayProps) 
       return <Badge color="primary">Token-based</Badge>;
     }
 
-    // Detailed view
     return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Badge color="primary">Token-based</Badge>
-          {tokenPricing && (
-            <span className="text-sm text-slate-600 dark:text-slate-400">
-              Pricing per {tokenPricing.per}
-            </span>
-          )}
+          <span>Pricing per {tokenPricing?.per ?? MILLION_TOKEN_LABEL}</span>
         </div>
 
-        {tokenPricing && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
-            <div className="grid gap-2 text-sm">
-              {tokenPricing.input !== undefined && (
-                <div className="flex justify-between">
-                  <span className="text-slate-600 dark:text-slate-400">Input:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                    {formatTokenPrice(tokenPricing.input, tokenPricing.currency || price_currency)}
-                  </span>
+        {tokenPricing ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {tokenPricing.input !== undefined && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Input tokens
+                </span>
+                <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {formatTokenPrice(tokenPricing.input, tokenPricing.currency || price_currency)}
                 </div>
-              )}
-              {tokenPricing.output !== undefined && (
-                <div className="flex justify-between">
-                  <span className="text-slate-600 dark:text-slate-400">Output:</span>
-                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                    {formatTokenPrice(tokenPricing.output, tokenPricing.currency || price_currency)}
-                  </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">per {tokenPricing.per}</span>
+              </div>
+            )}
+            {tokenPricing.cached !== undefined && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Cached tokens
+                </span>
+                <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {formatTokenPrice(tokenPricing.cached, tokenPricing.currency || price_currency)}
                 </div>
-              )}
-            </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">per {tokenPricing.per}</span>
+              </div>
+            )}
+            {tokenPricing.output !== undefined && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Output tokens
+                </span>
+                <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {formatTokenPrice(tokenPricing.output, tokenPricing.currency || price_currency)}
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">per {tokenPricing.per}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+            Detailed token pricing unavailable. Check vendor documentation for specifics.
           </div>
         )}
       </div>
@@ -334,30 +370,38 @@ export function PriceDisplay({ price, variant = "compact" }: PriceDisplayProps) 
 
     // Detailed view
     return (
-      <div className="space-y-3">
-        <Badge color="primary">{price_model}</Badge>
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <Badge color="primary">{price_model}</Badge>
+          {tiers.length > 0 && <span>{tiers.length} tier{tiers.length > 1 ? "s" : ""} available</span>}
+        </div>
 
-        {tiers.length > 0 && (
-          <div className="space-y-2">
+        {tiers.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2">
             {tiers.map((tier, index) => (
               <div
                 key={index}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800"
+                className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm transition hover:border-primary/60 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-slate-900 dark:text-slate-100">
-                    {tier.name}
-                  </h4>
-                  <span className="font-semibold text-primary">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="text-base font-semibold text-slate-900 dark:text-slate-100">{tier.name}</h4>
+                    {tier.features && tier.features.length > 0 && (
+                      <span className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                        {tier.features.length} feature{tier.features.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-lg font-semibold text-primary">
                     {formatCurrency(tier.price, tier.currency || price_currency)}
                   </span>
                 </div>
 
                 {tier.features && tier.features.length > 0 && (
-                  <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                  <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-300">
                     {tier.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-current"></span>
+                      <li key={featureIndex} className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary/60"></span>
                         {feature}
                       </li>
                     ))}
@@ -365,6 +409,10 @@ export function PriceDisplay({ price, variant = "compact" }: PriceDisplayProps) 
                 )}
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+            Tier information is not available for this model. Visit the vendor site for more details.
           </div>
         )}
       </div>
@@ -391,24 +439,27 @@ export function PriceDisplay({ price, variant = "compact" }: PriceDisplayProps) 
 
     // Detailed view
     return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Badge color="primary">Per call</Badge>
-          {callPricing && (
-            <span className="text-sm text-slate-600 dark:text-slate-400">
-              Pricing per API call
-            </span>
-          )}
+          <span>Simple call-based billing</span>
         </div>
 
-        {callPricing && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
-            <div className="text-sm">
-              <span className="text-slate-600 dark:text-slate-400">Price per call: </span>
-              <span className="font-medium text-slate-900 dark:text-slate-100">
-                {formatCurrency(callPricing.price, callPricing.currency || price_currency)}
-              </span>
+        {callPricing ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/60 sm:text-left">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              Price per call
+            </span>
+            <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              {formatCurrency(callPricing.price, callPricing.currency || price_currency)}
             </div>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Ideal for workloads with predictable request volumes.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+            Per-call pricing details are unavailable. Contact the provider for up-to-date rates.
           </div>
         )}
       </div>
