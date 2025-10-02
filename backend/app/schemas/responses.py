@@ -3,4 +3,5 @@ from .model import ModelRead
 
 
 class ModelPaginatedResponse(PaginatedResponse[ModelRead]):
-    pass
+    """Paginated response wrapper for model listings."""
+

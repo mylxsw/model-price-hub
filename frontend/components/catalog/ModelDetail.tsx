@@ -14,6 +14,7 @@ interface ModelDetailProps {
     license?: unknown;
     model_url?: string;
     note?: string;
+    release_date?: string | null;
   };
 }
 
@@ -49,13 +50,18 @@ function renderPricing(priceData?: Record<string, unknown> | string) {
     data = priceData ?? null;
   }
 
-  if (!data) return <p className="text-sm text-slate-400">No pricing data provided.</p>;
+  if (!data) return <p className="text-sm text-slate-500 dark:text-slate-400">No pricing data provided.</p>;
   return (
     <div className="space-y-3 text-sm">
       {Object.entries(data).map(([tier, value]) => (
-        <div key={tier} className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <h4 className="text-sm font-semibold text-slate-200 uppercase">{tier}</h4>
-          <pre className="mt-2 overflow-x-auto text-xs text-slate-300">{JSON.stringify(value, null, 2)}</pre>
+        <div
+          key={tier}
+          className="rounded-lg border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60"
+        >
+          <h4 className="text-sm font-semibold text-slate-600 uppercase dark:text-slate-200">{tier}</h4>
+          <pre className="mt-2 overflow-x-auto text-xs text-slate-600 dark:text-slate-300">
+            {JSON.stringify(value, null, 2)}
+          </pre>
         </div>
       ))}
     </div>
@@ -65,17 +71,23 @@ function renderPricing(priceData?: Record<string, unknown> | string) {
 export function ModelDetail({ model }: ModelDetailProps) {
   const capabilities = normalizeStringArray(model.model_capability);
   const licenses = normalizeStringArray(model.license);
+  const releaseDate = model.release_date ? new Date(model.release_date) : null;
 
   return (
     <div className="space-y-8">
       <Card title={model.model} description={model.description} actions={<Badge color="primary">{model.vendor.name}</Badge>}>
-        <div className="mt-4 space-y-6 text-sm text-slate-300">
+        <div className="mt-4 space-y-6 text-sm text-slate-600 dark:text-slate-300">
           {model.model_url && (
             <div>
-              <span className="text-xs uppercase tracking-wide text-slate-400">Documentation</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Documentation</span>
               <a href={model.model_url} target="_blank" rel="noreferrer" className="block text-primary">
                 {model.model_url}
               </a>
+            </div>
+          )}
+          {releaseDate && !Number.isNaN(releaseDate.getTime()) && (
+            <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Released {new Intl.DateTimeFormat("en", { year: "numeric", month: "long", day: "numeric" }).format(releaseDate)}
             </div>
           )}
           {capabilities.length > 0 && (
@@ -94,7 +106,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
               ))}
             </div>
           )}
-          {model.note && <p className="text-sm text-slate-400">{model.note}</p>}
+          {model.note && <p className="text-sm text-slate-500 dark:text-slate-400">{model.note}</p>}
         </div>
       </Card>
       <Card title="Pricing" description="Raw pricing data across tiers and token types.">

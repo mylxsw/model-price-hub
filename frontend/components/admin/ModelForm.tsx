@@ -24,6 +24,7 @@ export interface ModelInput {
   price_model?: string;
   price_currency?: string;
   price_data?: Record<string, unknown> | null;
+  release_date?: string | null;
   note?: string;
   license: string[];
   status?: string;
@@ -48,6 +49,7 @@ const createDefaultValues = (): ModelInput => ({
   price_model: "token",
   price_currency: "USD",
   price_data: { base: { input_token_1m: null, output_token_1m: null, input_token_cached_1m: null } },
+  release_date: undefined,
   note: undefined,
   license: [],
   status: "enabled"
@@ -120,7 +122,8 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
         ...initialValues,
         model_capability: normalizeStringArray(initialValues.model_capability),
         license: normalizeStringArray(initialValues.license),
-        price_data: priceData ?? (defaults.price_data as Record<string, unknown>)
+        price_data: priceData ?? (defaults.price_data as Record<string, unknown>),
+        release_date: initialValues.release_date ? initialValues.release_date.slice(0, 10) : undefined
       });
     } else {
       setValues(defaults);
@@ -139,7 +142,8 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
       await onSubmit({
         ...values,
         max_context_tokens: values.max_context_tokens ? Number(values.max_context_tokens) : undefined,
-        max_output_tokens: values.max_output_tokens ? Number(values.max_output_tokens) : undefined
+        max_output_tokens: values.max_output_tokens ? Number(values.max_output_tokens) : undefined,
+        release_date: values.release_date ? values.release_date : undefined
       });
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Failed to save model");
@@ -217,6 +221,12 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
           label="Model URL"
           value={values.model_url ?? ""}
           onChange={(event) => handleChange("model_url", event.target.value)}
+        />
+        <Input
+          label="Release date"
+          type="date"
+          value={values.release_date ?? ""}
+          onChange={(event) => handleChange("release_date", event.target.value || undefined)}
         />
         <div className="grid gap-4 sm:grid-cols-2">
           <Select

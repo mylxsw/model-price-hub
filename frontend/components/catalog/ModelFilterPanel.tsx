@@ -74,7 +74,7 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
   );
 
   return (
-    <aside className="w-full space-y-6 rounded-xl border border-slate-800 bg-slate-900/70 p-6 lg:w-80">
+    <aside className="w-full space-y-6 rounded-xl border border-slate-200 bg-white/90 p-6 shadow-sm transition dark:border-slate-800 dark:bg-slate-900/70 lg:w-80">
       <Input
         label="Search"
         placeholder="Model or vendor"

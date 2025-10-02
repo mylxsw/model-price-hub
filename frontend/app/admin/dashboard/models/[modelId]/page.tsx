@@ -35,6 +35,7 @@ export default function EditModelPage() {
       price_model: data.price_model,
       price_currency: data.price_currency,
       price_data: data.price_data ?? null,
+      release_date: data.release_date ?? null,
       note: data.note,
       license: data.license ?? [],
       status: data.status
