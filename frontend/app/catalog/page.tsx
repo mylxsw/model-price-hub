@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ModelFilterPanel, ModelFilterValues } from "../../components/catalog/ModelFilterPanel";
 import { ModelList } from "../../components/catalog/ModelList";
 import { useModels } from "../../lib/hooks/useModels";
 import { Select } from "../../components/ui/Select";
+import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
+import { ModelComparisonTable } from "../../components/catalog/ModelComparisonTable";
 
 const defaultFilters: ModelFilterValues = {
   search: "",
@@ -29,6 +31,8 @@ const sortOptions = [
 export default function CatalogPage() {
   const [filters, setFilters] = useState<ModelFilterValues>(defaultFilters);
   const [sort, setSort] = useState<string>(sortOptions[0]?.value ?? "release_desc");
+  const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
+  const { isOpen, close } = useFilterPanelStore();
   const query = useModels({
     search: filters.search,
     vendorName: filters.vendorName,
@@ -40,18 +44,48 @@ export default function CatalogPage() {
   });
 
   const models = useMemo(() => query.data?.items ?? [], [query.data]);
+  const selectedModels = useMemo(
+    () => models.filter((model) => selectedModelIds.includes(model.id)),
+    [models, selectedModelIds]
+  );
+
+  useEffect(() => {
+    setSelectedModelIds((current) => current.filter((id) => models.some((model) => model.id === id)));
+  }, [models]);
+
+  const handleToggleModel = (modelId: number) => {
+    setSelectedModelIds((current) =>
+      current.includes(modelId) ? current.filter((id) => id !== modelId) : [...current, modelId]
+    );
+  };
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:flex-row">
-      <ModelFilterPanel
-        values={filters}
-        onChange={setFilters}
-        onReset={() => {
-          setFilters(defaultFilters);
-          setSort(sortOptions[0]?.value ?? "release_desc");
-        }}
-      />
-      <div className="flex-1 space-y-6">
+    <div className="relative space-y-8">
+      {isOpen && (
+        <div className="fixed inset-0 z-40 flex items-start justify-end bg-slate-950/40 backdrop-blur-sm">
+          <button
+            type="button"
+            aria-label="Close filters"
+            className="absolute inset-0 cursor-default"
+            onClick={close}
+          />
+          <div
+            className="relative z-50 mt-24 w-full max-w-md px-4 pb-8 sm:px-6 lg:mt-28"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <ModelFilterPanel
+              values={filters}
+              onChange={setFilters}
+              onReset={() => {
+                setFilters(defaultFilters);
+                setSort(sortOptions[0]?.value ?? "release_desc");
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Model catalog</h1>
@@ -78,9 +112,23 @@ export default function CatalogPage() {
             Failed to load models. Please try again later.
           </div>
         ) : (
-          <ModelList models={models} />
+          <ModelList
+            models={models}
+            selectedModelIds={selectedModelIds}
+            onToggleCompare={handleToggleModel}
+          />
         )}
       </div>
+
+      {selectedModels.length >= 2 && (
+        <ModelComparisonTable
+          models={selectedModels}
+          onRemoveModel={(modelId) =>
+            setSelectedModelIds((current) => current.filter((id) => id !== modelId))
+          }
+          onClear={() => setSelectedModelIds([])}
+        />
+      )}
     </div>
   );
 }
