@@ -19,22 +19,35 @@ interface ModelDetailProps {
 }
 
 const normalizeStringArray = (input?: unknown): string[] => {
-  if (!input) return [];
-  if (Array.isArray(input)) {
-    return input.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-  }
-  if (typeof input === "string") {
-    try {
-      const parsed = JSON.parse(input);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-      }
-    } catch (error) {
-      // ignore JSON parse errors
+  const expand = (value: unknown): string[] => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => expand(item));
     }
-    return input.trim() ? [input.trim()] : [];
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) || typeof parsed === "string") {
+          return expand(parsed);
+        }
+      } catch (error) {
+        // ignore JSON parse errors and fall through to raw string
+      }
+      return [trimmed];
+    }
+    return [];
+  };
+
+  const deduped: string[] = [];
+  for (const entry of expand(input)) {
+    const normalized = entry.trim();
+    if (normalized && !deduped.includes(normalized)) {
+      deduped.push(normalized);
+    }
   }
-  return [];
+  return deduped;
 };
 
 function renderPricing(priceData?: Record<string, unknown> | string) {
@@ -69,19 +82,22 @@ function renderPricing(priceData?: Record<string, unknown> | string) {
 }
 
 export function ModelDetail({ model }: ModelDetailProps) {
-  const capabilities = normalizeStringArray(model.model_capability);
-  const licenses = normalizeStringArray(model.license);
-  const releaseDate = model.release_date ? new Date(model.release_date) : null;
+  const capabilities = normalizeStringArray((model as any).model_capability ?? (model as any).modelCapability);
+  const licenses = normalizeStringArray((model as any).license ?? (model as any).licenses);
+  const releaseDateRaw = (model as any).release_date ?? (model as any).releaseDate;
+  const priceData = (model as any).price_data ?? (model as any).priceData;
+  const releaseDate = releaseDateRaw ? new Date(releaseDateRaw) : null;
+  const modelUrl = (model as any).model_url ?? (model as any).modelUrl;
 
   return (
     <div className="space-y-8">
       <Card title={model.model} description={model.description} actions={<Badge color="primary">{model.vendor.name}</Badge>}>
         <div className="mt-4 space-y-6 text-sm text-slate-600 dark:text-slate-300">
-          {model.model_url && (
+          {modelUrl && (
             <div>
               <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Documentation</span>
-              <a href={model.model_url} target="_blank" rel="noreferrer" className="block text-primary">
-                {model.model_url}
+              <a href={modelUrl} target="_blank" rel="noreferrer" className="block text-primary">
+                {modelUrl}
               </a>
             </div>
           )}
@@ -110,7 +126,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
         </div>
       </Card>
       <Card title="Pricing" description="Raw pricing data across tiers and token types.">
-        {renderPricing(model.price_data)}
+        {renderPricing(priceData)}
       </Card>
     </div>
   );

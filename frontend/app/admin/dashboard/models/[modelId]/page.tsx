@@ -21,23 +21,34 @@ export default function EditModelPage() {
 
   const initialValues = useMemo<ModelInput | undefined>(() => {
     if (!data) return undefined;
+    const priceModel = (data as any).price_model ?? (data as any).priceModel;
+    const priceCurrency = (data as any).price_currency ?? (data as any).priceCurrency;
+    const priceData = (data as any).price_data ?? (data as any).priceData;
+    const releaseDate = (data as any).release_date ?? (data as any).releaseDate ?? null;
+    const modelUrl = (data as any).model_url ?? (data as any).modelUrl;
+    const capabilities = (data as any).model_capability ?? (data as any).modelCapability ?? [];
+    const license = (data as any).license ?? (data as any).licenses ?? [];
+    const maxContextTokens =
+      (data as any).max_context_tokens ?? (data as any).maxContextTokens ?? undefined;
+    const maxOutputTokens =
+      (data as any).max_output_tokens ?? (data as any).maxOutputTokens ?? undefined;
     return {
       id: data.id,
-      vendor_id: data.vendor_id,
+      vendor_id: (data as any).vendor_id ?? (data as any).vendorId,
       model: data.model,
       vendor_model_id: data.vendor_model_id,
       description: data.description,
       model_image: data.model_image,
-      max_context_tokens: data.max_context_tokens ?? undefined,
-      max_output_tokens: data.max_output_tokens ?? undefined,
-      model_capability: data.model_capability ?? [],
-      model_url: data.model_url,
-      price_model: data.price_model,
-      price_currency: data.price_currency,
-      price_data: data.price_data ?? null,
-      release_date: data.release_date ?? null,
+      max_context_tokens: maxContextTokens,
+      max_output_tokens: maxOutputTokens,
+      model_capability: capabilities,
+      model_url: modelUrl,
+      price_model: priceModel,
+      price_currency: priceCurrency,
+      price_data: priceData ?? null,
+      release_date: releaseDate,
       note: data.note,
-      license: data.license ?? [],
+      license,
       status: data.status
     };
   }, [data]);
@@ -53,11 +64,11 @@ export default function EditModelPage() {
   };
 
   return (
-    <div className="space-y-6 px-6 pb-10">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Edit model</h1>
-          <p className="text-sm text-slate-400">Update model metadata, pricing, and availability.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Edit model</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Update model metadata, pricing, and availability.</p>
         </div>
         <Button variant="secondary" onClick={() => router.push("/admin/dashboard/models")}>Back to models</Button>
       </div>

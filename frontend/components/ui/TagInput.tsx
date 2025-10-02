@@ -28,7 +28,7 @@ export function TagInput({ label, values, onChange, placeholder }: TagInputProps
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-slate-200">{label}</span>
+      <span className="text-sm font-medium text-slate-600 dark:text-slate-200">{label}</span>
       <div className="flex flex-wrap gap-2">
         {values.map((tag, index) => (
           <span

@@ -80,19 +80,39 @@ class ModelRead(ModelBase):
         orm_mode = True
         allow_population_by_field_name = True
 
+    @staticmethod
+    def _decode_string_list(value: object) -> list[str]:
+        def expand(item: object) -> list[str]:
+            if item is None:
+                return []
+            if isinstance(item, list):
+                result: list[str] = []
+                for entry in item:
+                    result.extend(expand(entry))
+                return result
+            if isinstance(item, str):
+                stripped = item.strip()
+                if not stripped:
+                    return []
+                try:
+                    parsed = json.loads(stripped)
+                except Exception:
+                    return [stripped]
+                if isinstance(parsed, (list, str)):
+                    return expand(parsed)
+                return [stripped]
+            return []
+
+        decoded: list[str] = []
+        for entry in expand(value):
+            normalized = entry.strip()
+            if normalized and normalized not in decoded:
+                decoded.append(normalized)
+        return decoded
+
     @validator("model_capability", pre=True)
     def parse_capabilities(cls, value):  # type: ignore[override]
-        seen = set()
-        current = value
-        while isinstance(current, str) and current not in seen:
-            seen.add(current)
-            try:
-                current = json.loads(current)
-            except Exception:
-                break
-        if isinstance(current, list):
-            return [item for item in current if isinstance(item, str) and item]
-        return current if current is not None else []
+        return cls._decode_string_list(value)
 
     @validator("price_data", pre=True)
     def parse_price(cls, value):  # type: ignore[override]
@@ -108,14 +128,4 @@ class ModelRead(ModelBase):
 
     @validator("license", pre=True)
     def parse_license(cls, value):  # type: ignore[override]
-        seen = set()
-        current = value
-        while isinstance(current, str) and current not in seen:
-            seen.add(current)
-            try:
-                current = json.loads(current)
-            except Exception:
-                break
-        if isinstance(current, list):
-            return [item for item in current if isinstance(item, str) and item]
-        return current if current is not None else []
+        return cls._decode_string_list(value)

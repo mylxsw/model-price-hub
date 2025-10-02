@@ -15,6 +15,48 @@ const client = new ApiClient({
   getToken: () => useAuthStore.getState().token ?? null
 });
 
+const readField = <T = unknown>(model: any, snake: string, camel?: string): T | undefined => {
+  if (model && Object.prototype.hasOwnProperty.call(model, snake)) {
+    return model[snake] as T;
+  }
+  if (camel && model && Object.prototype.hasOwnProperty.call(model, camel)) {
+    return model[camel] as T;
+  }
+  return undefined;
+};
+
+const toStringArray = (value: unknown): string[] => {
+  const expand = (input: unknown): string[] => {
+    if (!input) return [];
+    if (Array.isArray(input)) {
+      return input.flatMap((item) => expand(item));
+    }
+    if (typeof input === "string") {
+      const trimmed = input.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) || typeof parsed === "string") {
+          return expand(parsed);
+        }
+      } catch (error) {
+        // ignore parse errors and fall back to using the raw string
+      }
+      return [trimmed];
+    }
+    return [];
+  };
+
+  const deduped: string[] = [];
+  for (const entry of expand(value)) {
+    const normalized = entry.trim();
+    if (normalized && !deduped.includes(normalized)) {
+      deduped.push(normalized);
+    }
+  }
+  return deduped;
+};
+
 export default function AdminModelsPage() {
   const { data, refetch, isFetching } = useAdminModels();
   const router = useRouter();
@@ -60,7 +102,9 @@ export default function AdminModelsPage() {
               header: "Pricing",
               accessor: (model) => (
                 <span className="text-xs uppercase text-slate-500 dark:text-slate-400">
-                  {model.price_model ?? "n/a"} • {model.price_currency ?? ""}
+                  {readField<string>(model, "price_model", "priceModel") ?? "n/a"} •
+                  {" "}
+                  {readField<string>(model, "price_currency", "priceCurrency") ?? ""}
                 </span>
               )
             },
@@ -68,11 +112,17 @@ export default function AdminModelsPage() {
               header: "Release",
               accessor: (model) => (
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  {model.release_date
-                    ? new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" }).format(
-                        new Date(model.release_date)
-                      )
-                    : "—"}
+                  {(() => {
+                    const value = readField<string>(model, "release_date", "releaseDate");
+                    if (!value) return "—";
+                    const date = new Date(value);
+                    if (Number.isNaN(date.getTime())) return "—";
+                    return new Intl.DateTimeFormat("en", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric"
+                    }).format(date);
+                  })()}
                 </span>
               )
             },
@@ -80,11 +130,13 @@ export default function AdminModelsPage() {
               header: "Capabilities",
               accessor: (model) => (
                 <div className="flex flex-wrap gap-1">
-                  {(model.model_capability ?? []).slice(0, 3).map((capability: string) => (
-                    <Badge key={capability} color="secondary">
-                      {capability}
-                    </Badge>
-                  ))}
+                  {toStringArray(readField(model, "model_capability", "modelCapability"))
+                    .slice(0, 3)
+                    .map((capability: string) => (
+                      <Badge key={capability} color="secondary">
+                        {capability}
+                      </Badge>
+                    ))}
                 </div>
               )
             },

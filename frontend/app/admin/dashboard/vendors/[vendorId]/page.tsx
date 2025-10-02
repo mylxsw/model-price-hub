@@ -40,11 +40,11 @@ export default function EditVendorPage() {
   };
 
   return (
-    <div className="space-y-6 px-6 pb-10">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Edit vendor</h1>
-          <p className="text-sm text-slate-400">Update supplier details and status.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Edit vendor</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Update supplier details and status.</p>
         </div>
         <Button variant="secondary" onClick={() => router.push("/admin/dashboard/vendors")}>Back to vendors</Button>
       </div>

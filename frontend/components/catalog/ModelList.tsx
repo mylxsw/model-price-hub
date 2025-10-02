@@ -21,35 +21,50 @@ interface ModelListProps {
 }
 
 const normalizeStringArray = (value: unknown): string[] => {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-  }
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-      }
-    } catch (error) {
-      // ignore parse errors and fall back to raw string
+  const expand = (input: unknown): string[] => {
+    if (!input) return [];
+    if (Array.isArray(input)) {
+      return input.flatMap((item) => expand(item));
     }
-    return value.trim() ? [value.trim()] : [];
+    if (typeof input === "string") {
+      const trimmed = input.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) || typeof parsed === "string") {
+          return expand(parsed);
+        }
+      } catch (error) {
+        // ignore parse errors and fall back to the raw string
+      }
+      return [trimmed];
+    }
+    return [];
+  };
+
+  const deduped: string[] = [];
+  for (const entry of expand(value)) {
+    const normalized = entry.trim();
+    if (normalized && !deduped.includes(normalized)) {
+      deduped.push(normalized);
+    }
   }
-  return [];
+  return deduped;
 };
 
-const prettyPricing = (model: CatalogModel) => {
-  if (!model.price_model) return "Pricing unknown";
-  switch (model.price_model) {
+const prettyPricing = (model: CatalogModel | Record<string, unknown>) => {
+  const priceModel = (model as any).price_model ?? (model as any).priceModel;
+  const currency = (model as any).price_currency ?? (model as any).priceCurrency ?? "";
+  if (!priceModel) return "Pricing unknown";
+  switch (priceModel) {
     case "token":
-      return `${model.price_currency ?? ""} per token`;
+      return `${currency} per token`;
     case "call":
-      return `${model.price_currency ?? ""} per call`;
+      return `${currency} per call`;
     case "tiered":
-      return `${model.price_currency ?? ""} tiered pricing`;
+      return `${currency} tiered pricing`;
     default:
-      return model.price_model;
+      return priceModel;
   }
 };
 
@@ -68,9 +83,9 @@ export function ModelList({ models }: ModelListProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {models.map((model) => {
-        const capabilities = normalizeStringArray(model.model_capability);
-        const licenses = normalizeStringArray(model.license);
-        const releaseDate = formatReleaseDate(model.release_date);
+        const capabilities = normalizeStringArray((model as any).model_capability ?? (model as any).modelCapability);
+        const licenses = normalizeStringArray((model as any).license ?? (model as any).licenses);
+        const releaseDate = formatReleaseDate((model as any).release_date ?? (model as any).releaseDate);
 
         return (
           <Card
@@ -78,41 +93,41 @@ export function ModelList({ models }: ModelListProps) {
             title={model.model}
             description={model.description}
             actions={<Badge color="primary">{model.vendor.name}</Badge>}
-        >
-          <div className="mt-4 flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300">
-            <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              <span>Pricing</span>
-              <span>{prettyPricing(model)}</span>
-            </div>
-            {releaseDate && (
+          >
+            <div className="mt-4 flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                <span>Released</span>
-                <span>{releaseDate}</span>
+                <span>Pricing</span>
+                <span>{prettyPricing(model)}</span>
               </div>
-            )}
-            {capabilities.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {capabilities.map((capability) => (
-                  <Badge key={capability} color="secondary">
-                    {capability}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {licenses.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {licenses.map((license) => (
-                  <Badge key={license} color="success">
-                    {license}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            <Link href={`/catalog/${model.id}`} className="text-sm text-primary hover:text-primary-dark">
-              View details →
-            </Link>
-          </div>
-        </Card>
+              {releaseDate && (
+                <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <span>Released</span>
+                  <span>{releaseDate}</span>
+                </div>
+              )}
+              {capabilities.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {capabilities.map((capability) => (
+                    <Badge key={capability} color="secondary">
+                      {capability}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {licenses.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {licenses.map((license) => (
+                    <Badge key={license} color="success">
+                      {license}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <Link href={`/catalog/${model.id}`} className="text-sm text-primary hover:text-primary-dark">
+                View details →
+              </Link>
+            </div>
+          </Card>
         );
       })}
     </div>

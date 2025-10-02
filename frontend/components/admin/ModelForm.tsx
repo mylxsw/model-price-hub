@@ -99,23 +99,36 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
           }
         };
       }
-      const normalizeStringArray = (value: unknown): string[] => {
-        if (!value) return [];
-        if (Array.isArray(value)) {
-          return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      const expandStringList = (input: unknown): string[] => {
+        if (!input) return [];
+        if (Array.isArray(input)) {
+          return input.flatMap((item) => expandStringList(item));
         }
-        if (typeof value === "string") {
+        if (typeof input === "string") {
+          const trimmed = input.trim();
+          if (!trimmed) return [];
           try {
-            const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) {
-              return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed) || typeof parsed === "string") {
+              return expandStringList(parsed);
             }
           } catch (error) {
-            // fall through
+            // ignore parse errors and fall through to using the raw string
           }
-          return value.trim() ? [value.trim()] : [];
+          return [trimmed];
         }
         return [];
+      };
+
+      const normalizeStringArray = (value: unknown): string[] => {
+        const result: string[] = [];
+        for (const entry of expandStringList(value)) {
+          const normalized = entry.trim();
+          if (normalized && !result.includes(normalized)) {
+            result.push(normalized);
+          }
+        }
+        return result;
       };
       setValues({
         ...defaults,

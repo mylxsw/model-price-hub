@@ -26,8 +26,8 @@ export default function AdminVendorsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Vendors</h1>
-          <p className="text-sm text-slate-400">Manage supplier information and endpoints.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Vendors</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Manage supplier information and endpoints.</p>
         </div>
         <Button onClick={() => router.push("/admin/dashboard/vendors/new")}>Add vendor</Button>
       </div>
@@ -43,7 +43,7 @@ export default function AdminVendorsPage() {
               header: "Name",
               accessor: (vendor) => (
                 <div>
-                  <p className="font-medium text-slate-100">{vendor.name}</p>
+                  <p className="font-medium text-slate-800 dark:text-slate-100">{vendor.name}</p>
                   {vendor.url && (
                     <a href={vendor.url} className="text-xs text-primary" target="_blank" rel="noreferrer">
                       {vendor.url}
@@ -54,7 +54,9 @@ export default function AdminVendorsPage() {
             },
             {
               header: "Status",
-              accessor: (vendor) => <span className="text-xs uppercase text-slate-400">{vendor.status}</span>
+              accessor: (vendor) => (
+                <span className="text-xs uppercase text-slate-500 dark:text-slate-400">{vendor.status}</span>
+              )
             },
             {
               header: "Actions",

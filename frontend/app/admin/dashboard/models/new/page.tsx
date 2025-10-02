@@ -25,11 +25,11 @@ export default function CreateModelPage() {
   };
 
   return (
-    <div className="space-y-6 px-6 pb-10">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Create model</h1>
-          <p className="text-sm text-slate-400">Publish a new model entry with pricing and capabilities.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Create model</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Publish a new model entry with pricing and capabilities.</p>
         </div>
         <Button variant="secondary" onClick={() => router.push("/admin/dashboard/models")}>Back to models</Button>
       </div>
