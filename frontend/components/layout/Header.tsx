@@ -6,10 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "../../lib/hooks/useAuth";
 import { Button } from "../ui/Button";
 
-const navItems = [
-  { href: "/catalog", label: "Catalog" },
-  { href: "/admin/dashboard/models", label: "Admin" }
-];
+const navItems = [{ href: "/catalog", label: "Catalog" }];
 
 export function Header() {
   const pathname = usePathname();
@@ -36,14 +33,10 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <Button variant="secondary" size="sm" onClick={logout}>
             Logout
           </Button>
-        ) : (
-          <Link href="/admin/login" className="text-sm text-slate-300 hover:text-primary">
-            Admin Login
-          </Link>
         )}
       </div>
     </header>

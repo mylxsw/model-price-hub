@@ -29,7 +29,7 @@ export default function CatalogPage() {
   const models = useMemo(() => query.data?.items ?? [], [query.data]);
 
   return (
-    <div className="flex flex-col gap-8 lg:flex-row">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 lg:flex-row">
       <ModelFilterPanel
         values={filters}
         onChange={setFilters}

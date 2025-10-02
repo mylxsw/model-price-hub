@@ -30,3 +30,14 @@ export function useAdminVendors() {
     enabled: Boolean(token)
   });
 }
+
+export function useAdminVendor(vendorId?: number) {
+  const token = useAuthStore((state) => state.token);
+  const client = new ApiClient({ getToken: () => token });
+
+  return useQuery({
+    queryKey: ["admin-vendor", vendorId, token],
+    queryFn: () => client.get<any>(`/api/admin/vendors/${vendorId}`),
+    enabled: Boolean(token && vendorId)
+  });
+}

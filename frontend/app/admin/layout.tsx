@@ -1,25 +1,45 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { ReactNode, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
-import { initializeAuthFromStorage, useAuthStore } from "../../lib/hooks/useAuth";
+import { useAuthStore } from "../../lib/hooks/useAuth";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated } = useAuthStore();
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    initializeAuthFromStorage();
+    // Check for token in localStorage on client side
+    const token = localStorage.getItem("mph_token");
+    if (token) {
+      useAuthStore.getState().login(token);
+    }
+    setAuthChecked(true);
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/admin/login");
-    }
-  }, [isAuthenticated, router]);
+  const isOnLoginPage = pathname === "/admin/login";
 
-  if (!isAuthenticated) {
+  useEffect(() => {
+    if (!authChecked) {
+      return;
+    }
+    if (!isAuthenticated && !isOnLoginPage) {
+      router.replace("/admin/login");
+      return;
+    }
+    if (isAuthenticated && isOnLoginPage) {
+      router.replace("/admin/dashboard/models");
+    }
+  }, [authChecked, isAuthenticated, isOnLoginPage, router]);
+
+  if (!authChecked) {
+    return <div className="text-sm text-slate-400">Checking session...</div>;
+  }
+
+  if (!isAuthenticated && !isOnLoginPage) {
     return <div className="text-sm text-slate-400">Redirecting to login...</div>;
   }
 

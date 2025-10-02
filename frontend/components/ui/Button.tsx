@@ -3,7 +3,7 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 import classNames from "classnames";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "success" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,7 +15,9 @@ const baseStyles = "inline-flex items-center justify-center rounded-md font-medi
 const variantStyles: Record<ButtonVariant, string> = {
   primary: "bg-primary text-white hover:bg-primary-dark focus:ring-primary",
   secondary: "bg-slate-800 text-slate-200 hover:bg-slate-700 focus:ring-slate-500",
-  ghost: "bg-transparent text-slate-300 hover:bg-slate-800 focus:ring-slate-500"
+  ghost: "bg-transparent text-slate-300 hover:bg-slate-800 focus:ring-slate-500",
+  success: "bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-emerald-400",
+  danger: "bg-rose-500 text-white hover:bg-rose-600 focus:ring-rose-400"
 };
 const sizeStyles: Record<ButtonSize, string> = {
   sm: "px-3 py-1.5 text-sm",

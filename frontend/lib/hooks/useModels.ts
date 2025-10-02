@@ -12,6 +12,12 @@ interface ListResponse<T> {
   page_size: number;
 }
 
+interface ModelFilterMetadata {
+  vendors: string[];
+  capabilities: string[];
+  licenses: string[];
+}
+
 interface ModelFilters {
   search?: string;
   vendorName?: string;
@@ -58,5 +64,86 @@ export function useAdminModels(filters: Record<string, string | number | undefin
       return client.get<ListResponse<any>>(`/api/admin/models?${params.toString()}`);
     },
     enabled: Boolean(token)
+  });
+}
+
+export function useAdminModel(modelId?: number) {
+  const token = useAuthStore((state) => state.token);
+  const client = new ApiClient({ getToken: () => token });
+
+  return useQuery({
+    queryKey: ["admin-model", modelId, token],
+    queryFn: () => client.get<any>(`/api/admin/models/${modelId}`),
+    enabled: Boolean(token && modelId)
+  });
+}
+
+const FILTER_META_PAGE_SIZE = 100;
+
+export function useModelFilterOptions() {
+  const client = new ApiClient();
+
+  return useQuery<ModelFilterMetadata>({
+    queryKey: ["model-filter-options"],
+    queryFn: async () => {
+      const fetchAll = async (path: string) => {
+        const items: any[] = [];
+        let page = 1;
+        while (true) {
+          const response = await client.get<ListResponse<any>>(
+            `${path}?page=${page}&page_size=${FILTER_META_PAGE_SIZE}`
+          );
+          items.push(...(response.items ?? []));
+          if ((response.items?.length ?? 0) < FILTER_META_PAGE_SIZE || items.length >= (response.total ?? 0)) {
+            break;
+          }
+          page += 1;
+        }
+        return items;
+      };
+
+      const [vendorsItems, modelsItems] = await Promise.all([
+        fetchAll("/api/public/vendors"),
+        fetchAll("/api/public/models")
+      ]);
+
+      const vendors = Array.from(
+        new Set(
+          vendorsItems
+            .map((vendor) => vendor?.name)
+            .filter((name): name is string => Boolean(name))
+        )
+      ).sort((a, b) => a.localeCompare(b));
+
+      const capabilitySet = new Set<string>();
+      const licenseSet = new Set<string>();
+
+      modelsItems.forEach((model) => {
+        const capabilities = Array.isArray(model?.model_capability)
+          ? model.model_capability
+          : typeof model?.model_capability === "string"
+            ? [model.model_capability]
+            : [];
+        capabilities
+          .filter((cap): cap is string => Boolean(cap))
+          .forEach((cap) => capabilitySet.add(cap));
+
+        const licenses = Array.isArray(model?.license)
+          ? model.license
+          : typeof model?.license === "string"
+            ? [model.license]
+            : [];
+        licenses
+          .filter((license): license is string => Boolean(license))
+          .forEach((license) => licenseSet.add(license));
+      });
+
+      return {
+        vendors,
+        capabilities: Array.from(capabilitySet).sort((a, b) => a.localeCompare(b)),
+        licenses: Array.from(licenseSet).sort((a, b) => a.localeCompare(b))
+      };
+    },
+    staleTime: 5 * 60 * 1000
   });
 }

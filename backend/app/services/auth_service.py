@@ -1,11 +1,8 @@
 from datetime import timedelta
 
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import Session
-
 from ..core.config import get_settings
-from ..core.database import get_session
 from ..core.security import AuthError, create_access_token, decode_access_token, verify_password
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/admin/auth/login")
@@ -24,7 +21,7 @@ class AuthService:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         return create_access_token(username, expires_delta=timedelta(minutes=settings.access_token_expire_minutes))
 
-    def get_current_admin(self, token: str = Depends(oauth2_scheme)) -> str:
+    def get_current_admin(self, token: str) -> str:
         try:
             username = decode_access_token(token)
         except AuthError as exc:

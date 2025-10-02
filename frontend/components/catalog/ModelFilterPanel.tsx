@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Select } from "../ui/Select";
+import { useModelFilterOptions } from "../../lib/hooks/useModels";
 
 export interface ModelFilterValues {
   search: string;
@@ -36,6 +37,7 @@ const currencyOptions = [
 
 export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanelProps) {
   const [localValues, setLocalValues] = useState(values);
+  const { data: filterOptions, isLoading: optionsLoading } = useModelFilterOptions();
 
   useEffect(() => {
     setLocalValues(values);
@@ -47,6 +49,30 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
     onChange(updated);
   };
 
+  const vendorOptions = useMemo(
+    () => [
+      { label: "All vendors", value: "" },
+      ...((filterOptions?.vendors ?? []).map((vendor) => ({ label: vendor, value: vendor })))
+    ],
+    [filterOptions?.vendors]
+  );
+
+  const capabilityOptions = useMemo(
+    () => [
+      { label: "All capabilities", value: "" },
+      ...((filterOptions?.capabilities ?? []).map((capability) => ({ label: capability, value: capability })))
+    ],
+    [filterOptions?.capabilities]
+  );
+
+  const licenseOptions = useMemo(
+    () => [
+      { label: "All licenses", value: "" },
+      ...((filterOptions?.licenses ?? []).map((license) => ({ label: license, value: license })))
+    ],
+    [filterOptions?.licenses]
+  );
+
   return (
     <aside className="w-full space-y-6 rounded-xl border border-slate-800 bg-slate-900/70 p-6 lg:w-80">
       <Input
@@ -55,23 +81,26 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
         value={localValues.search}
         onChange={(event) => updateField("search", event.target.value)}
       />
-      <Input
+      <Select
         label="Vendor"
-        placeholder="Vendor name"
         value={localValues.vendorName}
         onChange={(event) => updateField("vendorName", event.target.value)}
+        options={vendorOptions}
+        disabled={optionsLoading}
       />
-      <Input
+      <Select
         label="Capability"
-        placeholder="e.g. chat"
         value={localValues.capability}
         onChange={(event) => updateField("capability", event.target.value)}
+        options={capabilityOptions}
+        disabled={optionsLoading}
       />
-      <Input
+      <Select
         label="License"
-        placeholder="e.g. commercial"
         value={localValues.license}
         onChange={(event) => updateField("license", event.target.value)}
+        options={licenseOptions}
+        disabled={optionsLoading}
       />
       <Select
         label="Pricing model"

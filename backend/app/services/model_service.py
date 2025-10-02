@@ -6,29 +6,73 @@ from sqlmodel import Session
 
 from ..models.model import Model
 from ..repositories.model_repository import ModelRepository
+from ..repositories.vendor_repository import VendorRepository
 from ..schemas.model import ModelCreate, ModelUpdate
 from ..utils.pagination import Page, paginate
 from .vendor_service import VendorService
 
 
 class ModelService:
-    def __init__(self, repository: ModelRepository | None = None, vendor_service: VendorService | None = None) -> None:
-        self.repository = repository or ModelRepository()
-        self.vendor_service = vendor_service or VendorService()
+    def __init__(self) -> None:
+        pass
 
     def _serialize(self, payload: ModelCreate | ModelUpdate) -> dict:
         data = payload.dict(exclude_unset=True, by_alias=False)
+
+        def _prepare_string_list(value):
+            if value is None:
+                return None
+
+            if isinstance(value, list):
+                cleaned = [str(item).strip() for item in value if isinstance(item, (str, int, float)) and str(item).strip()]
+                return json.dumps(cleaned) if cleaned else None
+
+            if isinstance(value, str):
+                stripped = value.strip()
+                if not stripped:
+                    return None
+                try:
+                    parsed = json.loads(stripped)
+                    if isinstance(parsed, list):
+                        cleaned = [str(item).strip() for item in parsed if isinstance(item, (str, int, float)) and str(item).strip()]
+                        return json.dumps(cleaned) if cleaned else None
+                except json.JSONDecodeError:
+                    pass
+                return json.dumps([stripped])
+
+            return json.dumps([str(value).strip()])
+
+        def _prepare_price_data(value):
+            if value is None:
+                return None
+
+            if isinstance(value, str):
+                try:
+                    parsed = json.loads(value)
+                except json.JSONDecodeError:
+                    return None
+                if isinstance(parsed, dict):
+                    return json.dumps(parsed)
+                return None
+
+            if isinstance(value, dict):
+                return json.dumps(value)
+
+            return None
+
         for key in ("model_capability", "license"):
-            if key in data and data[key] is not None:
-                data[key] = json.dumps(data[key])
-        if "price_data" in data and data["price_data"] is not None:
-            data["price_data"] = json.dumps(data["price_data"])
+            if key in data:
+                data[key] = _prepare_string_list(data[key])
+
+        if "price_data" in data:
+            data["price_data"] = _prepare_price_data(data["price_data"])
         return data
 
     def list_models(
         self,
         session: Session,
         *,
+        repository: ModelRepository,
         vendor_id: Optional[int] = None,
         vendor_name: Optional[str] = None,
         model_name: Optional[str] = None,
@@ -46,7 +90,7 @@ class ModelService:
         page_size: int = 20,
     ) -> Page[Model]:
         offset = (page - 1) * page_size
-        models, total = self.repository.search(
+        models, total = repository.search(
             session,
             vendor_id=vendor_id,
             vendor_name=vendor_name,
@@ -66,28 +110,28 @@ class ModelService:
         )
         return paginate(models, total, page, page_size)
 
-    def _ensure_vendor(self, session: Session, vendor_id: int) -> None:
-        self.vendor_service.get_vendor(session, vendor_id)
+    def _ensure_vendor(self, session: Session, vendor_id: int, vendor_service: VendorService, vendor_repo: VendorRepository) -> None:
+        vendor_service.get_vendor(session, vendor_id, vendor_repo)
 
-    def create_model(self, session: Session, payload: ModelCreate) -> Model:
-        self._ensure_vendor(session, payload.vendor_id)
+    def create_model(self, session: Session, payload: ModelCreate, repository: ModelRepository, vendor_service: VendorService, vendor_repo: VendorRepository) -> Model:
+        self._ensure_vendor(session, payload.vendor_id, vendor_service, vendor_repo)
         data = self._serialize(payload)
         model = Model(**data)
-        return self.repository.create(session, model)
+        return repository.create(session, model)
 
-    def get_model(self, session: Session, model_id: int) -> Model:
-        model = self.repository.get(session, model_id)
+    def get_model(self, session: Session, model_id: int, repository: ModelRepository) -> Model:
+        model = repository.get(session, model_id)
         if not model:
             raise HTTPException(status_code=404, detail="Model not found")
         return model
 
-    def update_model(self, session: Session, model_id: int, payload: ModelUpdate) -> Model:
-        model = self.get_model(session, model_id)
+    def update_model(self, session: Session, model_id: int, payload: ModelUpdate, repository: ModelRepository, vendor_service: VendorService, vendor_repo: VendorRepository) -> Model:
+        model = self.get_model(session, model_id, repository)
         if payload.vendor_id:
-            self._ensure_vendor(session, payload.vendor_id)
+            self._ensure_vendor(session, payload.vendor_id, vendor_service, vendor_repo)
         data = self._serialize(payload)
-        return self.repository.update(session, model, data)
+        return repository.update(session, model, data)
 
-    def delete_model(self, session: Session, model_id: int) -> None:
-        model = self.get_model(session, model_id)
-        self.repository.delete(session, model)
+    def delete_model(self, session: Session, model_id: int, repository: ModelRepository) -> None:
+        model = self.get_model(session, model_id, repository)
+        repository.delete(session, model)

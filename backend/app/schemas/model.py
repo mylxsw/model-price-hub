@@ -29,10 +29,12 @@ class ModelBase(BaseModel):
 
     @root_validator(pre=True)
     def ensure_lists(cls, values):  # type: ignore[override]
+        mutable = dict(values)
         for field in ("model_capability", "license"):
-            if isinstance(values.get(field), str):
-                values[field] = [values[field]]
-        return values
+            value = mutable.get(field)
+            if isinstance(value, str):
+                mutable[field] = [value]
+        return mutable
 
 
 class ModelCreate(ModelBase):
@@ -77,27 +79,40 @@ class ModelRead(ModelBase):
 
     @validator("model_capability", pre=True)
     def parse_capabilities(cls, value):  # type: ignore[override]
-        if isinstance(value, str):
+        seen = set()
+        current = value
+        while isinstance(current, str) and current not in seen:
+            seen.add(current)
             try:
-                return list(filter(None, json.loads(value)))
+                current = json.loads(current)
             except Exception:
-                return []
-        return value
+                break
+        if isinstance(current, list):
+            return [item for item in current if isinstance(item, str) and item]
+        return current if current is not None else []
 
     @validator("price_data", pre=True)
     def parse_price(cls, value):  # type: ignore[override]
-        if isinstance(value, str):
+        seen = set()
+        current = value
+        while isinstance(current, str) and current not in seen:
+            seen.add(current)
             try:
-                return json.loads(value)
+                current = json.loads(current)
             except Exception:
-                return None
-        return value
+                break
+        return current if isinstance(current, dict) else value
 
     @validator("license", pre=True)
     def parse_license(cls, value):  # type: ignore[override]
-        if isinstance(value, str):
+        seen = set()
+        current = value
+        while isinstance(current, str) and current not in seen:
+            seen.add(current)
             try:
-                return list(filter(None, json.loads(value)))
+                current = json.loads(current)
             except Exception:
-                return []
-        return value
+                break
+        if isinstance(current, list):
+            return [item for item in current if isinstance(item, str) and item]
+        return current if current is not None else []

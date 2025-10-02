@@ -8,12 +8,13 @@ from ..utils.pagination import Page, paginate
 
 
 class VendorService:
-    def __init__(self, repository: VendorRepository | None = None) -> None:
-        self.repository = repository or VendorRepository()
+    def __init__(self) -> None:
+        pass
 
     def list_vendors(
         self,
         session: Session,
+        repository: VendorRepository,
         *,
         status_filter: str | None = None,
         search: str | None = None,
@@ -21,7 +22,7 @@ class VendorService:
         page_size: int = 20,
     ) -> Page[Vendor]:
         offset = (page - 1) * page_size
-        vendors, total = self.repository.search(
+        vendors, total = repository.search(
             session,
             status=status_filter,
             search=search,
@@ -30,23 +31,25 @@ class VendorService:
         )
         return paginate(vendors, total, page, page_size)
 
-    def create_vendor(self, session: Session, payload: VendorCreate) -> Vendor:
+    def create_vendor(self, session: Session, payload: VendorCreate, repository: VendorRepository) -> Vendor:
         vendor = Vendor(**payload.dict())
-        return self.repository.create(session, vendor)
+        return repository.create(session, vendor)
 
-    def get_vendor(self, session: Session, vendor_id: int) -> Vendor:
-        vendor = self.repository.get(session, vendor_id)
+    def get_vendor(self, session: Session, vendor_id: int, repository: VendorRepository) -> Vendor:
+        vendor = repository.get(session, vendor_id)
         if not vendor:
             raise HTTPException(status_code=404, detail="Vendor not found")
         return vendor
 
-    def update_vendor(self, session: Session, vendor_id: int, payload: VendorUpdate) -> Vendor:
-        vendor = self.get_vendor(session, vendor_id)
+    def update_vendor(self, session: Session, vendor_id: int, payload: VendorUpdate, repository: VendorRepository) -> Vendor:
+        vendor = self.get_vendor(session, vendor_id, repository)
         data = payload.dict(exclude_unset=True)
-        return self.repository.update(session, vendor, data)
+        return repository.update(session, vendor, data)
 
-    def delete_vendor(self, session: Session, vendor_id: int) -> None:
-        vendor = self.get_vendor(session, vendor_id)
+    def delete_vendor(self, session: Session, vendor_id: int, repository: VendorRepository) -> None:
+        vendor = self.get_vendor(session, vendor_id, repository)
         if vendor.models:
-            raise HTTPException(status_code=400, detail="Vendor has associated models")
-        self.repository.delete(session, vendor)
+            raise HTTPException(
+                status_code=400, detail="Vendor has associated models and cannot be deleted"
+            )
+        repository.delete(session, vendor)

@@ -7,21 +7,52 @@ interface ModelDetailProps {
     model: string;
     description?: string;
     vendor: { id: number; name: string };
-    model_capability?: string[];
+    model_capability?: unknown;
     price_data?: Record<string, unknown>;
     price_model?: string;
     price_currency?: string;
-    license?: string[];
+    license?: unknown;
     model_url?: string;
     note?: string;
   };
 }
 
-function renderPricing(priceData?: Record<string, unknown>) {
-  if (!priceData) return <p className="text-sm text-slate-400">No pricing data provided.</p>;
+const normalizeStringArray = (input?: unknown): string[] => {
+  if (!input) return [];
+  if (Array.isArray(input)) {
+    return input.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch (error) {
+      // ignore JSON parse errors
+    }
+    return input.trim() ? [input.trim()] : [];
+  }
+  return [];
+};
+
+function renderPricing(priceData?: Record<string, unknown> | string) {
+  let data: Record<string, unknown> | null = null;
+
+  if (typeof priceData === "string") {
+    try {
+      data = JSON.parse(priceData) as Record<string, unknown>;
+    } catch (error) {
+      data = null;
+    }
+  } else {
+    data = priceData ?? null;
+  }
+
+  if (!data) return <p className="text-sm text-slate-400">No pricing data provided.</p>;
   return (
     <div className="space-y-3 text-sm">
-      {Object.entries(priceData).map(([tier, value]) => (
+      {Object.entries(data).map(([tier, value]) => (
         <div key={tier} className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
           <h4 className="text-sm font-semibold text-slate-200 uppercase">{tier}</h4>
           <pre className="mt-2 overflow-x-auto text-xs text-slate-300">{JSON.stringify(value, null, 2)}</pre>
@@ -32,6 +63,9 @@ function renderPricing(priceData?: Record<string, unknown>) {
 }
 
 export function ModelDetail({ model }: ModelDetailProps) {
+  const capabilities = normalizeStringArray(model.model_capability);
+  const licenses = normalizeStringArray(model.license);
+
   return (
     <div className="space-y-8">
       <Card title={model.model} description={model.description} actions={<Badge color="primary">{model.vendor.name}</Badge>}>
@@ -44,16 +78,16 @@ export function ModelDetail({ model }: ModelDetailProps) {
               </a>
             </div>
           )}
-          {model.model_capability && model.model_capability.length > 0 && (
+          {capabilities.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {model.model_capability.map((capability) => (
+              {capabilities.map((capability) => (
                 <Badge key={capability}>{capability}</Badge>
               ))}
             </div>
           )}
-          {model.license && model.license.length > 0 && (
+          {licenses.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {model.license.map((license) => (
+              {licenses.map((license) => (
                 <Badge key={license} color="success">
                   {license}
                 </Badge>

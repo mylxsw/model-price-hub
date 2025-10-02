@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Select } from "../ui/Select";
 
 export interface VendorInput {
   id?: number;
@@ -23,20 +24,28 @@ interface VendorFormProps {
   submitLabel?: string;
 }
 
+const createDefaultVendorValues = (): VendorInput => ({
+  name: "",
+  description: "",
+  vendor_image: "",
+  url: "",
+  api_url: "",
+  note: "",
+  status: "enabled"
+});
+
 export function VendorForm({ initialValues, onSubmit, submitLabel = "Save vendor" }: VendorFormProps) {
-  const [values, setValues] = useState<VendorInput>(
-    initialValues ?? {
-      name: "",
-      description: "",
-      vendor_image: "",
-      url: "",
-      api_url: "",
-      note: "",
-      status: "enabled"
-    }
-  );
+  const [values, setValues] = useState<VendorInput>(initialValues ?? createDefaultVendorValues());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialValues) {
+      setValues({ ...createDefaultVendorValues(), ...initialValues });
+    } else {
+      setValues(createDefaultVendorValues());
+    }
+  }, [initialValues]);
 
   const handleChange = (field: keyof VendorInput, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -76,7 +85,15 @@ export function VendorForm({ initialValues, onSubmit, submitLabel = "Save vendor
           onChange={(event) => handleChange("api_url", event.target.value)}
         />
         <Input label="Note" value={values.note ?? ""} onChange={(event) => handleChange("note", event.target.value)} />
-        <Input label="Status" value={values.status ?? ""} onChange={(event) => handleChange("status", event.target.value)} />
+        <Select
+          label="Status"
+          value={values.status ?? "enabled"}
+          onChange={(event) => handleChange("status", event.target.value)}
+          options={[
+            { label: "Enabled", value: "enabled" },
+            { label: "Disabled", value: "disabled" }
+          ]}
+        />
         {error && <p className="text-sm text-red-400">{error}</p>}
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Saving..." : submitLabel}

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { VendorForm, VendorInput } from "../../../../components/admin/VendorForm";
 import { Card } from "../../../../components/ui/Card";
 import { Table } from "../../../../components/ui/Table";
 import { Button } from "../../../../components/ui/Button";
@@ -16,30 +15,7 @@ const client = new ApiClient({
 
 export default function AdminVendorsPage() {
   const { data, refetch, isFetching } = useAdminVendors();
-  const [editingVendor, setEditingVendor] = useState<VendorInput | null>(null);
-
-  const handleSubmit = async (values: VendorInput) => {
-    if (values.id) {
-      await client.put(`/api/admin/vendors/${values.id}`, values);
-    } else {
-      await client.post("/api/admin/vendors", values);
-    }
-    setEditingVendor(null);
-    await refetch();
-  };
-
-  const handleEdit = (vendor: any) => {
-    setEditingVendor({
-      id: vendor.id,
-      name: vendor.name,
-      description: vendor.description,
-      vendor_image: vendor.vendor_image,
-      url: vendor.url,
-      api_url: vendor.api_url,
-      note: vendor.note,
-      status: vendor.status
-    });
-  };
+  const router = useRouter();
 
   const handleDelete = async (vendorId: number) => {
     await client.delete(`/api/admin/vendors/${vendorId}`);
@@ -47,10 +23,17 @@ export default function AdminVendorsPage() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100">Vendors</h1>
+          <p className="text-sm text-slate-400">Manage supplier information and endpoints.</p>
+        </div>
+        <Button onClick={() => router.push("/admin/dashboard/vendors/new")}>Add vendor</Button>
+      </div>
       <Card
         title="Vendor directory"
-        description="Manage supplier information."
+        description="Overview of all vendors accessible to the catalog."
         actions={<span className="text-xs text-slate-500">{isFetching ? "Refreshing..." : `${data?.total ?? 0} vendors`}</span>}
       >
         <Table
@@ -77,10 +60,10 @@ export default function AdminVendorsPage() {
               header: "Actions",
               accessor: (vendor) => (
                 <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(vendor)}>
+                  <Button variant="success" size="sm" onClick={() => router.push(`/admin/dashboard/vendors/${vendor.id}`)}>
                     Edit
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(vendor.id)}>
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(vendor.id)}>
                     Delete
                   </Button>
                 </div>
@@ -89,11 +72,6 @@ export default function AdminVendorsPage() {
           ]}
         />
       </Card>
-      <VendorForm
-        initialValues={editingVendor ?? undefined}
-        onSubmit={handleSubmit}
-        submitLabel={editingVendor ? "Update vendor" : "Create vendor"}
-      />
     </div>
   );
 }
