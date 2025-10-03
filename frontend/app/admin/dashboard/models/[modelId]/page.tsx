@@ -30,6 +30,8 @@ export default function EditModelPage() {
     const modelUrl = (data as any).model_url ?? (data as any).modelUrl;
     const capabilities = (data as any).model_capability ?? (data as any).modelCapability ?? [];
     const license = (data as any).license ?? (data as any).licenses ?? [];
+    const rawCategories = (data as any).categories ?? (data as any).category ?? [];
+    const categories = Array.isArray(rawCategories) ? rawCategories : rawCategories ? [rawCategories] : [];
     const maxContextTokens =
       (data as any).max_context_tokens ?? (data as any).maxContextTokens ?? undefined;
     const maxOutputTokens =
@@ -51,6 +53,7 @@ export default function EditModelPage() {
       release_date: releaseDate,
       note: data.note,
       license,
+      categories,
       status: data.status
     };
   }, [data]);

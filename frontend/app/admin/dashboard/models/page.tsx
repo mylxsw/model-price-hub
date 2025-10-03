@@ -122,10 +122,13 @@ export default function AdminModelsPage() {
   const totalPages = Math.max(1, Math.ceil(totalModels / pageSize));
 
   useEffect(() => {
+    if (!data) {
+      return;
+    }
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [page, totalPages]);
+  }, [data, page, totalPages]);
 
   const vendorOptions = useMemo(
     () => [

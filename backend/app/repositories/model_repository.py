@@ -67,8 +67,17 @@ class ModelRepository(BaseRepository[Model]):
             for license_value in license_values:
                 statement = statement.where(Model.license.contains(license_value))
         if categories:
+            def _unicode_escape(value: str) -> str:
+                try:
+                    return value.encode("unicode_escape").decode("ascii")
+                except Exception:
+                    return value
+
             for category in categories:
-                statement = statement.where(Model.categories.contains(category))
+                escaped = _unicode_escape(category)
+                statement = statement.where(
+                    or_(Model.categories.contains(category), Model.categories.contains(escaped))
+                )
         if status:
             statement = statement.where(Model.status == status)
         if search:

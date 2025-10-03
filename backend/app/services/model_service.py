@@ -33,7 +33,7 @@ class ModelService:
 
             if isinstance(value, list):
                 cleaned = [str(item).strip() for item in value if isinstance(item, (str, int, float)) and str(item).strip()]
-                return json.dumps(cleaned) if cleaned else None
+                return json.dumps(cleaned, ensure_ascii=False) if cleaned else None
 
             if isinstance(value, str):
                 stripped = value.strip()
@@ -43,12 +43,12 @@ class ModelService:
                     parsed = json.loads(stripped)
                     if isinstance(parsed, list):
                         cleaned = [str(item).strip() for item in parsed if isinstance(item, (str, int, float)) and str(item).strip()]
-                        return json.dumps(cleaned) if cleaned else None
+                        return json.dumps(cleaned, ensure_ascii=False) if cleaned else None
                 except json.JSONDecodeError:
                     pass
-                return json.dumps([stripped])
+                return json.dumps([stripped], ensure_ascii=False)
 
-            return json.dumps([str(value).strip()])
+            return json.dumps([str(value).strip()], ensure_ascii=False)
 
         def _prepare_price_data(value):
             if value is None:

@@ -300,6 +300,16 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
     setValues((current) => ({ ...current, price_model: nextModel, price_data: nextPriceData }));
   };
 
+  const toggleCategory = (category: string) => {
+    setValues((current) => {
+      const exists = current.categories.includes(category);
+      const nextCategories = exists
+        ? current.categories.filter((item) => item !== category)
+        : [...current.categories, category];
+      return { ...current, categories: nextCategories };
+    });
+  };
+
   return (
     <Card title={initialValues ? "Edit model" : "Create model"}>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -446,13 +456,3 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
     </Card>
   );
 }
-  const toggleCategory = (category: string) => {
-    setValues((current) => {
-      const exists = current.categories.includes(category);
-      const nextCategories = exists
-        ? current.categories.filter((item) => item !== category)
-        : [...current.categories, category];
-      return { ...current, categories: nextCategories };
-    });
-  };
-

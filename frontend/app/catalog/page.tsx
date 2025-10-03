@@ -136,10 +136,13 @@ export default function CatalogPage() {
   const totalPages = Math.max(1, Math.ceil(totalResults / pageSize));
 
   useEffect(() => {
+    if (!query.data) {
+      return;
+    }
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [page, totalPages]);
+  }, [page, totalPages, query.data]);
 
   const categoryTabs = useMemo(
     () => [{ value: "", label: "All" }, ...MODEL_CATEGORIES.map((item) => ({ value: item.value, label: item.label }))],
