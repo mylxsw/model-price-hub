@@ -18,7 +18,11 @@ def get_vendor_service() -> VendorService:
 router = APIRouter(prefix="/public", tags=["public"])
 
 
-@router.get("/vendors", response_model=PaginatedResponse[VendorRead])
+@router.get(
+    "/vendors",
+    response_model=PaginatedResponse[VendorRead],
+    response_model_by_alias=False,
+)
 def list_vendors(
     params: VendorQueryParams = Depends(VendorQueryParams),
     repo: VendorRepository = Depends(VendorRepository),
@@ -41,7 +45,11 @@ def list_vendors(
     )
 
 
-@router.get("/models", response_model=PaginatedResponse[ModelRead])
+@router.get(
+    "/models",
+    response_model=PaginatedResponse[ModelRead],
+    response_model_by_alias=False,
+)
 def list_models(
     params: ModelSearchParams = Depends(ModelSearchParams),
     repo: ModelRepository = Depends(ModelRepository),
@@ -57,7 +65,9 @@ def list_models(
     )
 
 
-@router.get("/models/{model_id}", response_model=ModelRead)
+@router.get(
+    "/models/{model_id}", response_model=ModelRead, response_model_by_alias=False
+)
 def get_model(
     model_id: int,
     repo: ModelRepository = Depends(ModelRepository),

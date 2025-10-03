@@ -4,6 +4,7 @@ from collections.abc import Generator
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
+from sqlalchemy.pool import StaticPool
 
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 os.environ.setdefault("SECRET_KEY", "test-secret")
@@ -14,7 +15,11 @@ from app.core.config import get_settings  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.main import app  # noqa: E402
 
-TEST_ENGINE = create_engine("sqlite://", connect_args={"check_same_thread": False})
+TEST_ENGINE = create_engine(
+    "sqlite://",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 
 database.engine = TEST_ENGINE
 
@@ -22,6 +27,7 @@ database.engine = TEST_ENGINE
 @pytest.fixture(scope="session", autouse=True)
 def prepare_database() -> Generator[None, None, None]:
     SQLModel.metadata.create_all(TEST_ENGINE)
+    database.init_db()
     yield
     SQLModel.metadata.drop_all(TEST_ENGINE)
 

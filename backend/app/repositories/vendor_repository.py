@@ -27,10 +27,12 @@ class VendorRepository(BaseRepository[Vendor]):
             like = f"%{search.lower()}%"
             statement = statement.where(func.lower(Vendor.name).like(like))
 
-        count_stmt = statement.with_only_columns(func.count()).order_by(None)
-        total = session.exec(count_stmt).one()
+        count_stmt = select(func.count()).select_from(statement.subquery())
+        total_result = session.exec(count_stmt).one()
+        total_value = total_result[0] if isinstance(total_result, tuple) else total_result
+
         results = session.exec(statement.offset(offset).limit(limit)).all()
-        return results, int(total)
+        return results, int(total_value)
 
     def get_by_name(self, session: Session, name: str) -> Optional[Vendor]:
         statement = (

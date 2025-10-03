@@ -9,6 +9,8 @@ import { Select } from "../../components/ui/Select";
 import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
 import { ModelComparisonTable } from "../../components/catalog/ModelComparisonTable";
 import { useLayoutModeStore } from "../../lib/hooks/useLayoutMode";
+import { Pagination } from "../../components/ui/Pagination";
+import { MODEL_CATEGORIES } from "../../lib/constants";
 
 const defaultFilters: ModelFilterValues = {
   search: "",
@@ -16,7 +18,8 @@ const defaultFilters: ModelFilterValues = {
   priceModel: "",
   priceCurrency: "",
   capability: "",
-  license: ""
+  license: "",
+  category: ""
 };
 
 const sortOptions = [
@@ -32,8 +35,9 @@ const sortOptions = [
 export default function CatalogPage() {
   const [filters, setFilters] = useState<ModelFilterValues>(defaultFilters);
   const [sort, setSort] = useState<string>(sortOptions[0]?.value ?? "release_desc");
+  const [page, setPage] = useState<number>(1);
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
-  const { isOpen, close } = useFilterPanelStore();
+  const { isOpen, close, setHasActiveFilters } = useFilterPanelStore();
   const layoutMode = useLayoutModeStore((state) => state.mode);
   const overlayWidthClasses = [
     "mx-auto flex w-full",
@@ -49,7 +53,9 @@ export default function CatalogPage() {
     priceCurrency: filters.priceCurrency,
     capability: filters.capability,
     license: filters.license,
-    sort
+    categories: filters.category,
+    sort,
+    page
   });
 
   const models = useMemo(() => query.data?.items ?? [], [query.data]);
@@ -62,6 +68,23 @@ export default function CatalogPage() {
     setSelectedModelIds((current) => current.filter((id) => models.some((model) => model.id === id)));
   }, [models]);
 
+  const hasFilters = useMemo(() => {
+    const baseChecks = [
+      filters.search.trim(),
+      filters.vendorName,
+      filters.priceModel,
+      filters.priceCurrency,
+      filters.capability,
+      filters.license,
+      filters.category
+    ];
+    return baseChecks.some(Boolean) || sort !== (sortOptions[0]?.value ?? "release_desc");
+  }, [filters, sort]);
+
+  useEffect(() => {
+    setHasActiveFilters(hasFilters);
+  }, [hasFilters, setHasActiveFilters]);
+
   const handleToggleModel = (modelId: number) => {
     setSelectedModelIds((current) =>
       current.includes(modelId) ? current.filter((id) => id !== modelId) : [...current, modelId]
@@ -73,6 +96,7 @@ export default function CatalogPage() {
       ...current,
       capability: current.capability === capability ? "" : capability
     }));
+    setPage(1);
   };
 
   const handleLicenseSelect = (license: string) => {
@@ -80,7 +104,47 @@ export default function CatalogPage() {
       ...current,
       license: current.license === license ? "" : license
     }));
+    setPage(1);
   };
+
+  const handleFilterPanelChange = (nextValues: ModelFilterValues) => {
+    setFilters(nextValues);
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setFilters(defaultFilters);
+    setSort(sortOptions[0]?.value ?? "release_desc");
+    setPage(1);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setFilters((current) => ({
+      ...current,
+      category
+    }));
+    setPage(1);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSort(value);
+    setPage(1);
+  };
+
+  const totalResults = query.data?.total ?? 0;
+  const pageSize = query.data?.page_size ?? 20;
+  const totalPages = Math.max(1, Math.ceil(totalResults / pageSize));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const categoryTabs = useMemo(
+    () => [{ value: "", label: "All" }, ...MODEL_CATEGORIES.map((item) => ({ value: item.value, label: item.label }))],
+    []
+  );
 
   return (
     <div className="relative space-y-8">
@@ -98,14 +162,7 @@ export default function CatalogPage() {
           >
             <div className={overlayWidthClasses}>
               <div className="w-full max-w-md">
-                <ModelFilterPanel
-                  values={filters}
-                  onChange={setFilters}
-                  onReset={() => {
-                    setFilters(defaultFilters);
-                    setSort(sortOptions[0]?.value ?? "release_desc");
-                  }}
-                />
+                <ModelFilterPanel values={filters} onChange={handleFilterPanelChange} onReset={handleResetFilters} />
               </div>
             </div>
           </div>
@@ -113,6 +170,26 @@ export default function CatalogPage() {
       )}
 
       <div className="space-y-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {categoryTabs.map((tab) => {
+            const isActive = filters.category === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => handleCategoryChange(tab.value)}
+                className={[
+                  "rounded-full px-4 py-2 text-sm font-medium transition",
+                  isActive
+                    ? "bg-primary text-white shadow"
+                    : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                ].join(" ")}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-1">
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -124,7 +201,7 @@ export default function CatalogPage() {
             <Select
               aria-label="Sort models"
               value={sort}
-              onChange={(event) => setSort(event.target.value)}
+              onChange={(event) => handleSortChange(event.target.value)}
               options={sortOptions}
             />
           </div>
@@ -145,6 +222,15 @@ export default function CatalogPage() {
             onSelectCapability={handleCapabilitySelect}
             onSelectLicense={handleLicenseSelect}
           />
+        )}
+        {totalPages > 1 && (
+          <div className="flex justify-center">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(nextPage) => setPage(nextPage)}
+            />
+          </div>
         )}
       </div>
 

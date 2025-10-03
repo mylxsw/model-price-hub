@@ -12,6 +12,7 @@ import { useAdminVendors } from "../../lib/hooks/useVendors";
 import { useModelFilterOptions } from "../../lib/hooks/useModels";
 import { PriceEditor } from "./PriceEditor";
 import { ImageUploadButton } from "./ImageUploadButton";
+import { MODEL_CATEGORIES } from "../../lib/constants";
 
 export interface ModelInput {
   id?: number;
@@ -30,6 +31,7 @@ export interface ModelInput {
   release_date?: string | null;
   note?: string;
   license: string[];
+  categories: string[];
   status?: string;
 }
 
@@ -55,6 +57,7 @@ const createDefaultValues = (): ModelInput => ({
   release_date: undefined,
   note: undefined,
   license: [],
+  categories: [],
   status: "enabled"
 });
 
@@ -221,6 +224,7 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
         ...initialValues,
         model_capability: normalizeStringArray(initialValues.model_capability),
         license: normalizeStringArray(initialValues.license),
+        categories: normalizeStringArray((initialValues as Record<string, unknown>).categories),
         price_data: priceData ?? (defaults.price_data as Record<string, unknown>),
         release_date: initialValues.release_date ? initialValues.release_date.slice(0, 10) : undefined
       });
@@ -360,6 +364,25 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
           suggestions={filterOptions.data?.capabilities ?? []}
           suggestionLabel="Existing capabilities"
         />
+        <div className="space-y-2">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-200">Categories</span>
+          <div className="flex flex-wrap gap-2">
+            {MODEL_CATEGORIES.map((category) => {
+              const isActive = values.categories.includes(category.value);
+              return (
+                <Button
+                  key={category.value}
+                  type="button"
+                  variant={isActive ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => toggleCategory(category.value)}
+                >
+                  {category.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
         <Input
           label="Model URL"
           value={values.model_url ?? ""}
@@ -379,7 +402,9 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
             options={[
               { label: "Token based", value: "token" },
               { label: "Per call", value: "call" },
-              { label: "Tiered", value: "tiered" }
+              { label: "Tiered", value: "tiered" },
+              { label: "Free", value: "free" },
+              { label: "Unknown", value: "unknown" }
             ]}
             required
           />
@@ -421,3 +446,13 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
     </Card>
   );
 }
+  const toggleCategory = (category: string) => {
+    setValues((current) => {
+      const exists = current.categories.includes(category);
+      const nextCategories = exists
+        ? current.categories.filter((item) => item !== category)
+        : [...current.categories, category];
+      return { ...current, categories: nextCategories };
+    });
+  };
+

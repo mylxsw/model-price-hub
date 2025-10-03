@@ -35,6 +35,13 @@ def _run_schema_migrations() -> None:
             # Re-raise with more context so startup failure is easier to triage
             raise RuntimeError("Failed to apply schema migration adding model.release_date column") from exc
 
+    if "categories" not in columns:
+        try:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE model ADD COLUMN categories VARCHAR"))
+        except SQLAlchemyError as exc:
+            raise RuntimeError("Failed to apply schema migration adding model.categories column") from exc
+
 
 @contextmanager
 def session_context() -> Generator[Session, None, None]:

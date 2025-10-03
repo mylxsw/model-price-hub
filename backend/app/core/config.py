@@ -136,6 +136,6 @@ class Settings(BaseSettings):
             normalized[display_currency] = 1.0
         return normalized
 
-
+@lru_cache()
 def get_settings() -> Settings:
     return Settings()

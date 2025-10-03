@@ -16,6 +16,7 @@ interface ModelFilterMetadata {
   vendors: string[];
   capabilities: string[];
   licenses: string[];
+  categories: string[];
 }
 
 interface ModelFilters {
@@ -25,6 +26,7 @@ interface ModelFilters {
   priceCurrency?: string;
   capability?: string;
   license?: string;
+  categories?: string | string[];
   page?: number;
   sort?: string;
 }
@@ -43,6 +45,14 @@ export function useModels(filters: ModelFilters = {}) {
       if (filters.priceCurrency) params.set("price_currency", filters.priceCurrency);
       if (filters.capability) params.set("capabilities", filters.capability);
       if (filters.license) params.set("license", filters.license);
+      if (filters.categories) {
+        const value = Array.isArray(filters.categories)
+          ? filters.categories.filter(Boolean).join(",")
+          : filters.categories;
+        if (value) {
+          params.set("categories", value);
+        }
+      }
       if (filters.sort) params.set("sort", filters.sort);
       if (filters.page) params.set("page", String(filters.page));
       return client.get<ListResponse<any>>(`/api/public/models?${params.toString()}`);
@@ -138,6 +148,7 @@ export function useModelFilterOptions() {
 
       const capabilitySet = new Set<string>();
       const licenseSet = new Set<string>();
+      const categorySet = new Set<string>();
 
       modelsItems.forEach((model) => {
         const capabilityCandidates = [
@@ -157,12 +168,21 @@ export function useModelFilterOptions() {
         licenseCandidates.forEach((candidate) => {
           normalizeStringArray(candidate).forEach((license) => licenseSet.add(license));
         });
+
+        const categoryCandidates = [
+          model?.categories,
+          (model as Record<string, unknown> | null | undefined)?.categories
+        ];
+        categoryCandidates.forEach((candidate) => {
+          normalizeStringArray(candidate).forEach((category) => categorySet.add(category));
+        });
       });
 
       return {
         vendors,
         capabilities: Array.from(capabilitySet).sort((a, b) => a.localeCompare(b)),
-        licenses: Array.from(licenseSet).sort((a, b) => a.localeCompare(b))
+        licenses: Array.from(licenseSet).sort((a, b) => a.localeCompare(b)),
+        categories: Array.from(categorySet).sort((a, b) => a.localeCompare(b))
       };
     },
     staleTime: 5 * 60 * 1000

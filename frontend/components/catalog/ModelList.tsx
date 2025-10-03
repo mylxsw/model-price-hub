@@ -26,6 +26,7 @@ export interface CatalogModel {
   modelCapability?: unknown;
   priceData?: Record<string, unknown>;
   license?: unknown;
+  categories?: unknown;
   release_date?: string | null;
   vendor_image?: string | null;
   vendorImage?: string | null;
@@ -176,12 +177,14 @@ export function ModelList({
             {models.map((model) => {
               const capabilities = normalizeStringArray(model.modelCapability);
               const licenses = normalizeStringArray(model.license);
+              const categories = normalizeStringArray(model.categories);
               const releaseDate = formatReleaseDate(model.release_date);
               const isSelected = selectedModelIds.includes(model.id);
               const vendorName = model.vendor?.name ?? "Unknown vendor";
               const vendorImage = getVendorImage(model);
               const vendorInitial = vendorName.charAt(0).toUpperCase();
-              const hasMetadata = capabilities.length > 0 || licenses.length > 0;
+              const hasMetadata =
+                capabilities.length > 0 || licenses.length > 0 || categories.length > 0;
 
               return (
                 <tr
@@ -235,6 +238,11 @@ export function ModelList({
                         )}
                       </div>
                       <div className="flex flex-wrap gap-2">
+                        {categories.map((category) => (
+                          <Badge key={category} color="primary">
+                            {category}
+                          </Badge>
+                        ))}
                         {capabilities.map((capability) => (
                           <Badge
                             key={capability}

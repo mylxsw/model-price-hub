@@ -33,7 +33,7 @@ function SearchIcon({ className }: { className?: string }) {
 export function Header() {
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAuthStore();
-  const { toggle, isOpen } = useFilterPanelStore();
+  const { toggle, isOpen, hasActiveFilters } = useFilterPanelStore();
   const layoutMode = useLayoutModeStore((state) => state.mode);
   const containerClasses = [
     "mx-auto flex w-full",
@@ -74,14 +74,16 @@ export function Header() {
           <PricingUnitSelector />
           {showFilterButton && (
             <Button
-              variant={isOpen ? "primary" : "ghost"}
+              variant={isOpen ? "primary" : hasActiveFilters ? "secondary" : "ghost"}
               size="sm"
               onClick={toggle}
               aria-label="Search and filter models"
               aria-pressed={isOpen}
               className="px-2"
             >
-              <SearchIcon className="h-4 w-4" />
+              <SearchIcon
+                className={["h-4 w-4", isOpen ? "text-white" : hasActiveFilters ? "text-primary" : ""].filter(Boolean).join(" ")}
+              />
             </Button>
           )}
           {isAuthenticated && isAdminRoute && (

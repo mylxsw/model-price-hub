@@ -23,7 +23,7 @@ def get_model_service() -> ModelService:
 router = APIRouter(prefix="/admin/models", tags=["admin-models"], dependencies=[Depends(get_current_admin)])
 
 
-@router.get("", response_model=ModelPaginatedResponse)
+@router.get("", response_model=ModelPaginatedResponse, response_model_by_alias=False)
 def list_models(
     params: ModelSearchParams = Depends(ModelSearchParams),
     service: ModelService = Depends(ModelService),
@@ -39,7 +39,12 @@ def list_models(
     )
 
 
-@router.post("", response_model=ModelRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ModelRead,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
 def create_model(
     payload: ModelCreate,
     service: ModelService = Depends(get_model_service),
@@ -72,7 +77,9 @@ def import_models(
     return service.import_models(session, payload, repo, vendor_repo)
 
 
-@router.get("/{model_id}", response_model=ModelRead)
+@router.get(
+    "/{model_id}", response_model=ModelRead, response_model_by_alias=False
+)
 def get_model(
     model_id: int,
     service: ModelService = Depends(ModelService),
@@ -83,7 +90,9 @@ def get_model(
     return ModelRead.from_orm(model)
 
 
-@router.put("/{model_id}", response_model=ModelRead)
+@router.put(
+    "/{model_id}", response_model=ModelRead, response_model_by_alias=False
+)
 def update_model(
     model_id: int,
     payload: ModelUpdate,

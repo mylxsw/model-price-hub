@@ -28,6 +28,7 @@ class ModelRepository(BaseRepository[Model]):
         price_model: Optional[str] = None,
         price_currency: Optional[str] = None,
         license_values: Optional[Iterable[str]] = None,
+        categories: Optional[Iterable[str]] = None,
         status: Optional[str] = None,
         search: Optional[str] = None,
         offset: int = 0,
@@ -65,6 +66,9 @@ class ModelRepository(BaseRepository[Model]):
         if license_values:
             for license_value in license_values:
                 statement = statement.where(Model.license.contains(license_value))
+        if categories:
+            for category in categories:
+                statement = statement.where(Model.categories.contains(category))
         if status:
             statement = statement.where(Model.status == status)
         if search:
@@ -101,14 +105,15 @@ class ModelRepository(BaseRepository[Model]):
         if sort is None:
             statement = statement.order_by(Model.created_at.desc())
 
-        count_stmt = statement.with_only_columns(func.count()).order_by(None)
-        total = session.exec(count_stmt).one()
+        count_stmt = select(func.count()).select_from(statement.subquery())
+        total_result = session.exec(count_stmt).one()
+        total_value = total_result[0] if isinstance(total_result, tuple) else total_result
 
         if fetch_all:
             results = session.exec(statement).all()
         else:
             results = session.exec(statement.offset(offset).limit(limit)).all()
-        return results, int(total)
+        return results, int(total_value)
 
     def get_by_vendor_and_vendor_model_id(
         self, session: Session, vendor_id: int, vendor_model_id: str

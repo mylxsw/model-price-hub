@@ -176,6 +176,9 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
           output: asNumber(tier.output_price_per_unit)
         };
         const requestPrice = asNumber(tier.price_per_unit);
+        const isFree = Boolean(
+          (tier.is_free as boolean | undefined) ?? (tier.isFree as boolean | undefined)
+        );
         return (
           <div
             key={index}
@@ -227,6 +230,23 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
                   options={unitOptions}
                 />
               </div>
+              <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={isFree}
+                  onChange={(event) =>
+                    updateTier(index, (current) => ({
+                      ...current,
+                      is_free: event.target.checked,
+                      price_per_unit: null,
+                      input_price_per_unit: null,
+                      cached_price_per_unit: null,
+                      output_price_per_unit: null
+                    }))
+                  }
+                />
+                Free tier
+              </label>
 
               {billing === "token" ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -236,6 +256,7 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
                     min={0}
                     step="0.0001"
                     value={tokenPrices.input ?? ""}
+                    disabled={isFree}
                     onChange={(event) =>
                       updateTier(index, (current) => ({
                         ...current,
@@ -249,6 +270,7 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
                     min={0}
                     step="0.0001"
                     value={tokenPrices.cached ?? ""}
+                    disabled={isFree}
                     onChange={(event) =>
                       updateTier(index, (current) => ({
                         ...current,
@@ -262,6 +284,7 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
                     min={0}
                     step="0.0001"
                     value={tokenPrices.output ?? ""}
+                    disabled={isFree}
                     onChange={(event) =>
                       updateTier(index, (current) => ({
                         ...current,
@@ -278,6 +301,7 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
                     min={0}
                     step="0.0001"
                     value={requestPrice ?? ""}
+                    disabled={isFree}
                     onChange={(event) =>
                       updateTier(index, (current) => ({
                         ...current,
@@ -310,6 +334,25 @@ function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<stri
 export function PriceEditor({ priceModel, value, onChange }: PriceEditorProps) {
   if (!priceModel) {
     return <p className="text-sm text-slate-500 dark:text-slate-400">Select a price model to configure pricing data.</p>;
+  }
+
+  if (priceModel === "free") {
+    return (
+      <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-500/60 dark:bg-emerald-500/10 dark:text-emerald-200">
+        This model is marked as free. No pricing data is required.
+      </p>
+    );
+  }
+
+  if (priceModel === "unknown") {
+    return (
+      <div className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+        <p>Pricing details are currently unknown. You can add notes in the model description to provide additional context.</p>
+        <Button type="button" variant="secondary" size="sm" onClick={() => onChange(null)}>
+          Clear pricing data
+        </Button>
+      </div>
+    );
   }
 
   if (priceModel === "token") {
