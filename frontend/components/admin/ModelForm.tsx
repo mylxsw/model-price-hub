@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Input } from "../ui/Input";
+import { Textarea } from "../ui/Textarea";
 import { Select } from "../ui/Select";
 import { TagInput } from "../ui/TagInput";
 import { useAdminVendors } from "../../lib/hooks/useVendors";
@@ -232,6 +233,17 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
     setValues((current) => ({ ...current, [field]: value }));
   };
 
+  const parseOptionalNumber = (value: ModelInput["max_context_tokens"]): number | undefined => {
+    if (value === undefined || value === null) return undefined;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) return undefined;
+      const parsed = Number(trimmed);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    }
+    return Number.isFinite(value) ? value : undefined;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
@@ -239,8 +251,8 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
     try {
       await onSubmit({
         ...values,
-        max_context_tokens: values.max_context_tokens ? Number(values.max_context_tokens) : undefined,
-        max_output_tokens: values.max_output_tokens ? Number(values.max_output_tokens) : undefined,
+        max_context_tokens: parseOptionalNumber(values.max_context_tokens),
+        max_output_tokens: parseOptionalNumber(values.max_output_tokens),
         release_date: values.release_date ? values.release_date : undefined
       });
     } catch (submissionError) {
@@ -301,10 +313,12 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
           value={values.vendor_model_id ?? ""}
           onChange={(event) => handleChange("vendor_model_id", event.target.value)}
         />
-        <Input
+        <Textarea
           label="Description"
           value={values.description ?? ""}
           onChange={(event) => handleChange("description", event.target.value)}
+          placeholder="Supports Markdown formatting"
+          rows={6}
         />
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div className="sm:flex-1">
@@ -375,9 +389,7 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
             onChange={(event) => handleChange("price_currency", event.target.value)}
             options={[
               { label: "USD", value: "USD" },
-              { label: "EUR", value: "EUR" },
               { label: "CNY", value: "CNY" },
-              { label: "JPY", value: "JPY" }
             ]}
             required
           />

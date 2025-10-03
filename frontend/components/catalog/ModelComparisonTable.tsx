@@ -13,6 +13,8 @@ interface ModelComparisonTableProps {
 }
 
 export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelComparisonTableProps) {
+  const columnWidth = models.length ? `${(100 / models.length).toFixed(2)}%` : "auto";
+
   return (
     <Card
       title="Model comparison"
@@ -33,7 +35,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
                 Feature
               </th>
               {models.map((model) => (
-                <th key={model.id} scope="col" className="min-w-[220px] px-4 py-3">
+                <th key={model.id} scope="col" className="min-w-[220px] px-4 py-3" style={{ width: columnWidth }}>
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <Link
@@ -66,7 +68,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
                 Pricing
               </th>
               {models.map((model) => (
-                <td key={model.id} className="px-4 py-4 align-top">
+                <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
                   <PriceDisplay
                     price={{
                       price_model: model.priceModel,
@@ -86,7 +88,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
               {models.map((model) => {
                 const capabilities = normalizeStringArray(model.modelCapability);
                 return (
-                  <td key={model.id} className="px-4 py-4 align-top">
+                  <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
                     {capabilities.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {capabilities.map((capability) => (
@@ -109,7 +111,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
               {models.map((model) => {
                 const licenses = normalizeStringArray(model.license);
                 return (
-                  <td key={model.id} className="px-4 py-4 align-top">
+                  <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
                     {licenses.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {licenses.map((license) => (
@@ -130,7 +132,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
                 Release
               </th>
               {models.map((model) => (
-                <td key={model.id} className="px-4 py-4 align-top">
+                <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
                   {formatReleaseDate(model.release_date) ? (
                     <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                       {formatReleaseDate(model.release_date)}
@@ -146,7 +148,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
                 Highlights
               </th>
               {models.map((model) => (
-                <td key={model.id} className="px-4 py-4 align-top">
+                <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
                   {model.description ? (
                     <p className="text-sm text-slate-600 dark:text-slate-300">{model.description}</p>
                   ) : (

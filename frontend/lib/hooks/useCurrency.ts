@@ -6,6 +6,18 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ApiClient } from "../apiClient";
 
+const CURRENCY_SYMBOL_OVERRIDES: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  CNY: "¥",
+  JPY: "¥",
+  KRW: "₩",
+  INR: "₹",
+  AUD: "A$",
+  CAD: "C$"
+};
+
 interface CurrencyConfigResponse {
   displayCurrency: string;
   exchangeRates: Record<string, number>;
@@ -117,8 +129,11 @@ export function useCurrency() {
         return { amount: value, currency: source };
       }
 
-      const amountInUsd = value * fromRate;
-      return { amount: amountInUsd / toRate, currency: target };
+      // Convert from source currency to USD first, then to target currency
+      // fromRate and toRate are both relative to USD (1 USD = X currency)
+      const amountInUsd = value / fromRate;  // Convert source currency to USD
+      const finalAmount = amountInUsd * toRate;  // Convert USD to target currency
+      return { amount: finalAmount, currency: target };
     },
     [displayCurrency, normalizedRates, selectedCurrency]
   );
@@ -148,12 +163,16 @@ export function useCurrency() {
         return new Intl.NumberFormat("en-US", {
           style: "currency",
           currency,
+          currencyDisplay: "narrowSymbol",
           minimumFractionDigits,
           maximumFractionDigits
         }).format(amount);
       } catch (error) {
         const fallbackDigits = Math.min(maximumFractionDigits, Math.abs(amount) < 1 ? 4 : 2);
-        return `${amount.toFixed(fallbackDigits)} ${currency}`;
+        const symbol = CURRENCY_SYMBOL_OVERRIDES[currency] ?? currency;
+        const formatted = amount.toFixed(fallbackDigits);
+        const shouldPrefix = symbol.length === 1 || /[$¥€£₩₹]$/.test(symbol);
+        return shouldPrefix ? `${symbol}${formatted}` : `${formatted} ${symbol}`;
       }
     },
     [convertCurrency, selectedCurrency]

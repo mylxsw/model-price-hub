@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { ModelForm, ModelInput } from "../../../../../components/admin/ModelForm";
 import { Button } from "../../../../../components/ui/Button";
+import { useToast } from "../../../../../components/ui/ToastProvider";
 import { ApiClient } from "../../../../../lib/apiClient";
 import { useAuthStore } from "../../../../../lib/hooks/useAuth";
 import { useAdminModel } from "../../../../../lib/hooks/useModels";
@@ -16,6 +17,7 @@ const client = new ApiClient({
 export default function EditModelPage() {
   const params = useParams<{ modelId: string }>();
   const router = useRouter();
+  const { showToast } = useToast();
   const modelId = Number(params.modelId);
   const { data, isLoading, error } = useAdminModel(Number.isFinite(modelId) ? modelId : undefined);
 
@@ -58,9 +60,20 @@ export default function EditModelPage() {
       ...values,
       price_data: values.price_data ?? undefined
     };
-    await client.put(`/api/admin/models/${modelId}`, payload);
-    router.push("/admin/dashboard/models");
-    router.refresh();
+    try {
+      await client.put(`/api/admin/models/${modelId}`, payload);
+      showToast({
+        variant: "success",
+        title: "Model updated",
+        description: values.model ? `${values.model} has been updated.` : "Changes saved successfully."
+      });
+      router.push("/admin/dashboard/models");
+      router.refresh();
+    } catch (updateError) {
+      const message = updateError instanceof Error ? updateError.message : "Unable to update model";
+      showToast({ variant: "error", title: "Update failed", description: message });
+      throw updateError;
+    }
   };
 
   return (

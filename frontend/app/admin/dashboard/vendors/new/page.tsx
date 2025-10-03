@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { VendorForm, VendorInput } from "../../../../../components/admin/VendorForm";
 import { Button } from "../../../../../components/ui/Button";
+import { useToast } from "../../../../../components/ui/ToastProvider";
 import { ApiClient } from "../../../../../lib/apiClient";
 import { useAuthStore } from "../../../../../lib/hooks/useAuth";
 
@@ -13,11 +14,23 @@ const client = new ApiClient({
 
 export default function CreateVendorPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleSubmit = async (values: VendorInput) => {
-    await client.post("/api/admin/vendors", values);
-    router.push("/admin/dashboard/vendors");
-    router.refresh();
+    try {
+      await client.post("/api/admin/vendors", values);
+      showToast({
+        variant: "success",
+        title: "Vendor created",
+        description: values.name ? `${values.name} has been added.` : "Vendor saved successfully."
+      });
+      router.push("/admin/dashboard/vendors");
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create vendor";
+      showToast({ variant: "error", title: "Vendor creation failed", description: message });
+      throw error;
+    }
   };
 
   return (

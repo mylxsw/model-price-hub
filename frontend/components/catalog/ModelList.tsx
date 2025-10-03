@@ -1,7 +1,11 @@
 import Link from "next/link";
+import React, { useMemo, useState } from "react";
+import ReactMarkdown, { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
+import { Modal } from "../ui/Modal";
 import { PriceDisplay } from "./PriceDisplay";
 
 interface CatalogVendor {
@@ -31,6 +35,8 @@ interface ModelListProps {
   models: CatalogModel[];
   selectedModelIds?: number[];
   onToggleCompare?: (modelId: number) => void;
+  onSelectCapability?: (capability: string) => void;
+  onSelectLicense?: (license: string) => void;
 }
 
 export const normalizeStringArray = (value: unknown): string[] => {
@@ -81,7 +87,61 @@ const getVendorImage = (model: CatalogModel): string | null => {
   return fromVendor ?? fromModel ?? null;
 };
 
-export function ModelList({ models, selectedModelIds = [], onToggleCompare }: ModelListProps) {
+export function ModelList({
+  models,
+  selectedModelIds = [],
+  onToggleCompare,
+  onSelectCapability,
+  onSelectLicense
+}: ModelListProps) {
+  const [activeDescription, setActiveDescription] = useState<{ title: string; content: string } | null>(null);
+
+  const markdownComponents: Components = {
+    p: ({ children }) => (
+      <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{children}</p>
+    ),
+    ul: ({ children }) => (
+      <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{children}</ul>
+    ),
+    ol: ({ children }) => (
+      <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{children}</ol>
+    ),
+    li: ({ children }) => <li className="marker:text-slate-400">{children}</li>,
+    a: ({ href, children }) => (
+      <a href={href} target="_blank" rel="noreferrer" className="text-primary underline">
+        {children}
+      </a>
+    ),
+    code: ({ children }) => (
+      <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+        {children}
+      </code>
+    ),
+    pre: ({ children }) => (
+      <pre className="overflow-auto rounded-md bg-slate-900 p-2 text-[11px] text-slate-100 dark:bg-slate-800">
+        {children}
+      </pre>
+    ),
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 border-slate-200 pl-3 text-xs italic text-slate-600 dark:border-slate-700 dark:text-slate-300">
+        {children}
+      </blockquote>
+    )
+  };
+
+  const modalMarkdownComponents = useMemo<Components>(() => ({
+    ...markdownComponents,
+    p: ({ children }) => (
+      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{children}</p>
+    ),
+    ul: ({ children }) => (
+      <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{children}</ul>
+    ),
+    ol: ({ children }) => (
+      <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{children}</ol>
+    )
+  }), [markdownComponents]);
+
   if (!models.length) {
     return <Card title="No models found">Try adjusting your filters or search query.</Card>;
   }
@@ -129,7 +189,8 @@ export function ModelList({ models, selectedModelIds = [], onToggleCompare }: Mo
                   className="transition hover:bg-slate-50/80 dark:hover:bg-slate-900/40"
                 >
                   <td className="w-28 px-3 py-4 align-top">
-                    <label className="flex items-center gap-2 text-xs font-medium">
+                    <label className="flex items-center justify-center">
+                      <span className="sr-only">{`Select ${model.model} for comparison`}</span>
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
@@ -137,7 +198,6 @@ export function ModelList({ models, selectedModelIds = [], onToggleCompare }: Mo
                         onChange={() => onToggleCompare?.(model.id)}
                         aria-label={`Select ${model.model} for comparison`}
                       />
-                      <span className="hidden text-slate-500 sm:inline">Compare</span>
                     </label>
                   </td>
                   <td className="w-32 px-3 py-4 align-top text-center">
@@ -162,29 +222,34 @@ export function ModelList({ models, selectedModelIds = [], onToggleCompare }: Mo
                           {model.model}
                         </Link>
                         {model.description && (
-                          <div className="group relative inline-flex">
+                          <div className="inline-flex">
                             <button
                               type="button"
                               className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-600 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
                               aria-label={`View description for ${model.model}`}
-                              title={model.description}
+                              onClick={() => setActiveDescription({ title: model.model, content: model.description ?? "" })}
                             >
                               ?
                             </button>
-                            <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-64 -translate-x-1/2 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-lg group-hover:block group-focus-within:block dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                              {model.description}
-                            </div>
                           </div>
                         )}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {capabilities.map((capability) => (
-                          <Badge key={capability} color="secondary">
+                          <Badge
+                            key={capability}
+                            color="secondary"
+                            onClick={onSelectCapability ? () => onSelectCapability(capability) : undefined}
+                          >
                             {capability}
                           </Badge>
                         ))}
                         {licenses.map((license) => (
-                          <Badge key={license} color="success">
+                          <Badge
+                            key={license}
+                            color="success"
+                            onClick={onSelectLicense ? () => onSelectLicense(license) : undefined}
+                          >
                             {license}
                           </Badge>
                         ))}
@@ -225,6 +290,15 @@ export function ModelList({ models, selectedModelIds = [], onToggleCompare }: Mo
           </tbody>
         </table>
       </div>
+      <Modal open={Boolean(activeDescription)} onClose={() => setActiveDescription(null)} title={activeDescription?.title ?? ""}>
+        {activeDescription && (
+          <div className="space-y-4">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={modalMarkdownComponents}>
+              {activeDescription.content}
+            </ReactMarkdown>
+          </div>
+        )}
+      </Modal>
     </Card>
   );
 }

@@ -14,6 +14,7 @@ import { ModelFilterValues } from "../../../../components/catalog/ModelFilterPan
 import { ApiClient } from "../../../../lib/apiClient";
 import { useAdminModels, useModelFilterOptions } from "../../../../lib/hooks/useModels";
 import { useAuthStore } from "../../../../lib/hooks/useAuth";
+import { useToast } from "../../../../components/ui/ToastProvider";
 
 const client = new ApiClient({
   getToken: () => useAuthStore.getState().token ?? null
@@ -38,9 +39,7 @@ const priceModelOptions = [
 const currencyOptions = [
   { label: "All currencies", value: "" },
   { label: "USD", value: "USD" },
-  { label: "EUR", value: "EUR" },
   { label: "CNY", value: "CNY" },
-  { label: "JPY", value: "JPY" }
 ];
 
 const readField = <T = unknown>(model: any, snake: string, camel?: string): T | undefined => {
@@ -107,6 +106,7 @@ export default function AdminModelsPage() {
   const { data, refetch, isFetching } = useAdminModels(adminFilters);
   const { data: filterOptions, isLoading: filtersLoading } = useModelFilterOptions();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const models = useMemo(() => data?.items ?? [], [data?.items]);
 
@@ -143,9 +143,19 @@ export default function AdminModelsPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleDelete = async (modelId: number) => {
-    await client.delete(`/api/admin/models/${modelId}`);
-    await refetch();
+  const handleDelete = async (modelId: number, modelName?: string) => {
+    try {
+      await client.delete(`/api/admin/models/${modelId}`);
+      await refetch();
+      showToast({
+        variant: "success",
+        title: "Model deleted",
+        description: modelName ? `${modelName} has been removed.` : "The model has been removed."
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete model";
+      showToast({ variant: "error", title: "Delete failed", description: message });
+    }
   };
 
   const handleExport = useCallback(async () => {
@@ -465,7 +475,7 @@ export default function AdminModelsPage() {
                   <Button variant="success" size="sm" onClick={() => router.push(`/admin/dashboard/models/${model.id}`)}>
                     Edit
                   </Button>
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(model.id)}>
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(model.id, model.model)}>
                     Delete
                   </Button>
                 </div>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { VendorForm, VendorInput } from "../../../../../components/admin/VendorForm";
 import { Button } from "../../../../../components/ui/Button";
+import { useToast } from "../../../../../components/ui/ToastProvider";
 import { ApiClient } from "../../../../../lib/apiClient";
 import { useAuthStore } from "../../../../../lib/hooks/useAuth";
 import { useAdminVendor } from "../../../../../lib/hooks/useVendors";
@@ -16,6 +17,7 @@ const client = new ApiClient({
 export default function EditVendorPage() {
   const params = useParams<{ vendorId: string }>();
   const router = useRouter();
+  const { showToast } = useToast();
   const vendorId = Number(params.vendorId);
   const { data, isLoading, error } = useAdminVendor(Number.isFinite(vendorId) ? vendorId : undefined);
 
@@ -34,9 +36,20 @@ export default function EditVendorPage() {
   }, [data]);
 
   const handleSubmit = async (values: VendorInput) => {
-    await client.put(`/api/admin/vendors/${vendorId}`, values);
-    router.push("/admin/dashboard/vendors");
-    router.refresh();
+    try {
+      await client.put(`/api/admin/vendors/${vendorId}`, values);
+      showToast({
+        variant: "success",
+        title: "Vendor updated",
+        description: values.name ? `${values.name} has been updated.` : "Changes saved successfully."
+      });
+      router.push("/admin/dashboard/vendors");
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to update vendor";
+      showToast({ variant: "error", title: "Update failed", description: message });
+      throw error;
+    }
   };
 
   return (

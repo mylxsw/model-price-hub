@@ -68,6 +68,20 @@ export default function CatalogPage() {
     );
   };
 
+  const handleCapabilitySelect = (capability: string) => {
+    setFilters((current) => ({
+      ...current,
+      capability: current.capability === capability ? "" : capability
+    }));
+  };
+
+  const handleLicenseSelect = (license: string) => {
+    setFilters((current) => ({
+      ...current,
+      license: current.license === license ? "" : license
+    }));
+  };
+
   return (
     <div className="relative space-y-8">
       {isOpen && (
@@ -128,6 +142,8 @@ export default function CatalogPage() {
             models={models}
             selectedModelIds={selectedModelIds}
             onToggleCompare={handleToggleModel}
+            onSelectCapability={handleCapabilitySelect}
+            onSelectLicense={handleLicenseSelect}
           />
         )}
       </div>

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     admin_username: str = Field("admin", env="ADMIN_USERNAME")
     admin_password_hash: str = Field("", env="ADMIN_PASSWORD_HASH")
 
-    cors_origins: List[str] = Field(default_factory=lambda: ["*"])
+    cors_origins: Optional[str] = Field(default="*", env="CORS_ORIGINS")
 
     s3_bucket: Optional[str] = Field(default=None, env="S3_BUCKET")
     s3_region: Optional[str] = Field(default=None, env="S3_REGION")
@@ -39,10 +39,15 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
 
     @validator("cors_origins", pre=True)
-    def split_cors_origins(cls, value: Optional[str]):  # type: ignore[override]
-        if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
-        return value
+    def split_cors_origins(cls, value):  # type: ignore[override]
+        return value  # Just return the string as-is
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Convert cors_origins string to list for CORS middleware"""
+        if not self.cors_origins or self.cors_origins == "":
+            return ["*"]
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     @validator("s3_prefix", pre=True)
     def normalize_prefix(cls, value: Optional[str]):  # type: ignore[override]

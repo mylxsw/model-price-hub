@@ -8,6 +8,7 @@ import { Button } from "../../../../components/ui/Button";
 import { ApiClient } from "../../../../lib/apiClient";
 import { useAdminVendors } from "../../../../lib/hooks/useVendors";
 import { useAuthStore } from "../../../../lib/hooks/useAuth";
+import { useToast } from "../../../../components/ui/ToastProvider";
 
 const client = new ApiClient({
   getToken: () => useAuthStore.getState().token ?? null
@@ -16,10 +17,21 @@ const client = new ApiClient({
 export default function AdminVendorsPage() {
   const { data, refetch, isFetching } = useAdminVendors();
   const router = useRouter();
+  const { showToast } = useToast();
 
-  const handleDelete = async (vendorId: number) => {
-    await client.delete(`/api/admin/vendors/${vendorId}`);
-    await refetch();
+  const handleDelete = async (vendorId: number, name?: string) => {
+    try {
+      await client.delete(`/api/admin/vendors/${vendorId}`);
+      await refetch();
+      showToast({
+        variant: "success",
+        title: "Vendor deleted",
+        description: name ? `${name} has been removed.` : "Vendor deleted successfully."
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete vendor";
+      showToast({ variant: "error", title: "Delete failed", description: message });
+    }
   };
 
   return (
@@ -65,7 +77,7 @@ export default function AdminVendorsPage() {
                   <Button variant="success" size="sm" onClick={() => router.push(`/admin/dashboard/vendors/${vendor.id}`)}>
                     Edit
                   </Button>
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(vendor.id)}>
+                  <Button variant="danger" size="sm" onClick={() => handleDelete(vendor.id, vendor.name)}>
                     Delete
                   </Button>
                 </div>

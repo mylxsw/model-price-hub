@@ -140,8 +140,23 @@ export function useModelFilterOptions() {
       const licenseSet = new Set<string>();
 
       modelsItems.forEach((model) => {
-        normalizeStringArray(model?.model_capability).forEach((cap) => capabilitySet.add(cap));
-        normalizeStringArray(model?.license).forEach((license) => licenseSet.add(license));
+        const capabilityCandidates = [
+          model?.model_capability,
+          (model as Record<string, unknown> | null | undefined)?.modelCapability,
+          (model as Record<string, unknown> | null | undefined)?.capabilities,
+          (model as Record<string, unknown> | null | undefined)?.capability
+        ];
+        capabilityCandidates.forEach((candidate) => {
+          normalizeStringArray(candidate).forEach((cap) => capabilitySet.add(cap));
+        });
+
+        const licenseCandidates = [
+          model?.license,
+          (model as Record<string, unknown> | null | undefined)?.licenses
+        ];
+        licenseCandidates.forEach((candidate) => {
+          normalizeStringArray(candidate).forEach((license) => licenseSet.add(license));
+        });
       });
 
       return {

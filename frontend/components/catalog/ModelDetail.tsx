@@ -1,3 +1,6 @@
+import ReactMarkdown, { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
 import { PriceDisplay } from "./PriceDisplay";
@@ -59,11 +62,64 @@ export function ModelDetail({ model }: ModelDetailProps) {
   const priceData = (model as any).priceData;
   const releaseDate = releaseDateRaw ? new Date(releaseDateRaw) : null;
   const modelUrl = (model as any).modelUrl;
+  const modelImage =
+    (model as any).model_image ?? (model as any).modelImage ?? (model as any).image ?? null;
+
+  const cardTitle = modelImage ? (
+    <div className="flex items-center gap-3">
+      <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-lg font-semibold text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+        <img src={modelImage as string} alt={`${model.model} logo`} className="h-full w-full object-cover" />
+      </span>
+      <span>{model.model}</span>
+    </div>
+  ) : (
+    model.model
+  );
+
+  const markdownComponents: Components = {
+    p: ({ children }) => (
+      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{children}</p>
+    ),
+    ul: ({ children }) => (
+      <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{children}</ul>
+    ),
+    ol: ({ children }) => (
+      <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{children}</ol>
+    ),
+    li: ({ children }) => <li className="marker:text-slate-400">{children}</li>,
+    a: ({ href, children }) => (
+      <a href={href} target="_blank" rel="noreferrer" className="text-primary underline">
+        {children}
+      </a>
+    ),
+    code: ({ children }) => (
+      <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+        {children}
+      </code>
+    ),
+    pre: ({ children }) => (
+      <pre className="overflow-auto rounded-md bg-slate-900 p-3 text-xs text-slate-100 dark:bg-slate-800">
+        {children}
+      </pre>
+    ),
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 border-slate-200 pl-4 text-sm italic text-slate-600 dark:border-slate-700 dark:text-slate-300">
+        {children}
+      </blockquote>
+    )
+  };
 
   return (
     <div className="space-y-8">
-      <Card title={model.model} description={model.description} actions={<Badge color="primary">{model.vendor.name}</Badge>}>
+      <Card title={cardTitle} actions={<Badge color="primary">{model.vendor.name}</Badge>}>
         <div className="mt-4 space-y-6 text-sm text-slate-600 dark:text-slate-300">
+          {model.description && (
+            <div className="space-y-3">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {model.description}
+              </ReactMarkdown>
+            </div>
+          )}
           {modelUrl && (
             <div>
               <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Documentation</span>

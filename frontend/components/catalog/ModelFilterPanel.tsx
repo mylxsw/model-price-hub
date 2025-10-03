@@ -30,12 +30,6 @@ const priceModelOptions = [
   { label: "Tiered", value: "tiered" }
 ];
 
-const currencyOptions = [
-  { label: "All currencies", value: "" },
-  { label: "USD", value: "USD" },
-  { label: "CNY", value: "CNY" }
-];
-
 export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanelProps) {
   const [localValues, setLocalValues] = useState(values);
   const { data: filterOptions, isLoading: optionsLoading } = useModelFilterOptions();
@@ -127,12 +121,6 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
         value={localValues.priceModel}
         onChange={(event) => updateField("priceModel", event.target.value)}
         options={priceModelOptions}
-      />
-      <Select
-        label="Currency"
-        value={localValues.priceCurrency}
-        onChange={(event) => updateField("priceCurrency", event.target.value)}
-        options={currencyOptions}
       />
       <div className="mt-auto flex flex-col gap-3 sm:flex-row">
         <Button variant="secondary" onClick={onReset} className="w-full sm:flex-1">

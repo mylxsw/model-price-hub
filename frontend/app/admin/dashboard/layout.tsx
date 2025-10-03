@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import classNames from "classnames";
 
+import { useLayoutModeStore } from "../../../lib/hooks/useLayoutMode";
+
 const links = [
   { href: "/admin/dashboard/models", label: "Models" },
   { href: "/admin/dashboard/vendors", label: "Vendors" }
@@ -12,9 +14,15 @@ const links = [
 
 export default function AdminDashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const mode = useLayoutModeStore((state) => state.mode);
+
+  const containerClasses = classNames(
+    "w-full space-y-8 px-4 pb-12 sm:px-6",
+    mode === "centered" ? "mx-auto max-w-6xl" : "mx-auto"
+  );
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 pb-12 sm:px-6">
+    <div className={containerClasses}>
       <nav className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white/90 p-2 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
         {links.map((link) => {
           const isActive = pathname?.startsWith(link.href);
