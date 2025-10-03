@@ -7,6 +7,7 @@ import { useAuthStore } from "../../lib/hooks/useAuth";
 import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
 import { useLayoutModeStore } from "../../lib/hooks/useLayoutMode";
 import { Button } from "../ui/Button";
+import { CurrencySelector } from "../currency/CurrencySelector";
 
 const navItems: Array<{ href: string; label: string }> = [];
 
@@ -67,7 +68,8 @@ export function Header() {
             ))}
           </nav>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <CurrencySelector />
           {showFilterButton && (
             <Button
               variant={isOpen ? "primary" : "ghost"}
