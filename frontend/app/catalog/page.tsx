@@ -1,44 +1,43 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { ModelFilterPanel, ModelFilterValues } from "../../components/catalog/ModelFilterPanel";
 import { ModelList } from "../../components/catalog/ModelList";
 import { useModels } from "../../lib/hooks/useModels";
 import { Select } from "../../components/ui/Select";
 import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
-import { ModelComparisonTable } from "../../components/catalog/ModelComparisonTable";
 import { useLayoutModeStore } from "../../lib/hooks/useLayoutMode";
 import { Pagination } from "../../components/ui/Pagination";
 import { MODEL_CATEGORIES } from "../../lib/constants";
+import { Button } from "../../components/ui/Button";
+import { CurrencySelector } from "../../components/currency/CurrencySelector";
+import { PricingUnitSelector } from "../../components/pricing/PricingUnitSelector";
+import {
+  catalogSortOptions,
+  createCatalogSearchParams,
+  defaultCatalogSort,
+  defaultModelFilters,
+  filtersAreEqual,
+  parseCatalogSearchParams
+} from "../../lib/catalogFilters";
+import { CompareModelsModal } from "../../components/catalog/CompareModelsModal";
 
-const defaultFilters: ModelFilterValues = {
-  search: "",
-  vendorName: "",
-  priceModel: "",
-  priceCurrency: "",
-  capability: "",
-  license: "",
-  category: ""
-};
-
-const sortOptions = [
-  { label: "Release date (newest)", value: "release_desc" },
-  { label: "Release date (oldest)", value: "release_asc" },
-  { label: "Price (low to high)", value: "price_asc" },
-  { label: "Price (high to low)", value: "price_desc" },
-  { label: "Vendor (A-Z)", value: "vendor_asc" },
-  { label: "Model name (A-Z)", value: "model_asc" },
-  { label: "Model name (Z-A)", value: "model_desc" }
-];
+const MAX_COMPARE_SELECTIONS = 5;
 
 export default function CatalogPage() {
-  const [filters, setFilters] = useState<ModelFilterValues>(defaultFilters);
-  const [sort, setSort] = useState<string>(sortOptions[0]?.value ?? "release_desc");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [filters, setFilters] = useState<ModelFilterValues>({ ...defaultModelFilters });
+  const [sort, setSort] = useState<string>(defaultCatalogSort);
   const [page, setPage] = useState<number>(1);
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
   const { isOpen, close, setHasActiveFilters } = useFilterPanelStore();
   const layoutMode = useLayoutModeStore((state) => state.mode);
+
   const overlayWidthClasses = [
     "mx-auto flex w-full",
     layoutMode === "centered" ? "max-w-7xl" : "",
@@ -46,6 +45,24 @@ export default function CatalogPage() {
   ]
     .filter(Boolean)
     .join(" ");
+
+  const updateSearchParams = useCallback(
+    (nextFilters: ModelFilterValues, nextSort: string, nextPage: number) => {
+      const params = createCatalogSearchParams(nextFilters, nextSort, nextPage);
+      const queryString = params.toString();
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    },
+    [pathname, router]
+  );
+
+  useEffect(() => {
+    const params = searchParams ? new URLSearchParams(searchParams.toString()) : new URLSearchParams();
+    const { filters: nextFilters, sort: nextSort, page: nextPage } = parseCatalogSearchParams(params);
+    setFilters((current) => (filtersAreEqual(current, nextFilters) ? current : nextFilters));
+    setSort((current) => (current === nextSort ? current : nextSort));
+    setPage((current) => (current === nextPage ? current : nextPage));
+  }, [searchParams]);
+
   const query = useModels({
     search: filters.search,
     vendorName: filters.vendorName,
@@ -59,14 +76,6 @@ export default function CatalogPage() {
   });
 
   const models = useMemo(() => query.data?.items ?? [], [query.data]);
-  const selectedModels = useMemo(
-    () => models.filter((model) => selectedModelIds.includes(model.id)),
-    [models, selectedModelIds]
-  );
-
-  useEffect(() => {
-    setSelectedModelIds((current) => current.filter((id) => models.some((model) => model.id === id)));
-  }, [models]);
 
   const hasFilters = useMemo(() => {
     const baseChecks = [
@@ -78,57 +87,99 @@ export default function CatalogPage() {
       filters.license,
       filters.category
     ];
-    return baseChecks.some(Boolean) || sort !== (sortOptions[0]?.value ?? "release_desc");
+    return baseChecks.some(Boolean) || sort !== defaultCatalogSort;
   }, [filters, sort]);
 
   useEffect(() => {
     setHasActiveFilters(hasFilters);
   }, [hasFilters, setHasActiveFilters]);
 
-  const handleToggleModel = (modelId: number) => {
-    setSelectedModelIds((current) =>
-      current.includes(modelId) ? current.filter((id) => id !== modelId) : [...current, modelId]
-    );
-  };
-
   const handleCapabilitySelect = (capability: string) => {
-    setFilters((current) => ({
-      ...current,
-      capability: current.capability === capability ? "" : capability
-    }));
-    setPage(1);
+    setFilters((current) => {
+      const next = {
+        ...current,
+        capability: current.capability === capability ? "" : capability
+      };
+      setPage(1);
+      updateSearchParams(next, sort, 1);
+      return next;
+    });
   };
 
   const handleLicenseSelect = (license: string) => {
-    setFilters((current) => ({
-      ...current,
-      license: current.license === license ? "" : license
-    }));
-    setPage(1);
+    setFilters((current) => {
+      const next = {
+        ...current,
+        license: current.license === license ? "" : license
+      };
+      setPage(1);
+      updateSearchParams(next, sort, 1);
+      return next;
+    });
   };
 
   const handleFilterPanelChange = (nextValues: ModelFilterValues) => {
     setFilters(nextValues);
     setPage(1);
+    updateSearchParams(nextValues, sort, 1);
   };
 
   const handleResetFilters = () => {
-    setFilters(defaultFilters);
-    setSort(sortOptions[0]?.value ?? "release_desc");
+    setFilters({ ...defaultModelFilters });
+    setSort(defaultCatalogSort);
     setPage(1);
+    updateSearchParams(defaultModelFilters, defaultCatalogSort, 1);
   };
 
   const handleCategoryChange = (category: string) => {
-    setFilters((current) => ({
-      ...current,
-      category
-    }));
-    setPage(1);
+    setFilters((current) => {
+      const nextCategory = current.category === category ? "" : category;
+      const next = {
+        ...current,
+        category: nextCategory
+      };
+      setPage(1);
+      updateSearchParams(next, sort, 1);
+      return next;
+    });
   };
 
   const handleSortChange = (value: string) => {
     setSort(value);
     setPage(1);
+    updateSearchParams(filters, value, 1);
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    setPage(nextPage);
+    updateSearchParams(filters, sort, nextPage);
+  };
+
+  const toggleModelSelection = (modelId: number) => {
+    setSelectedModelIds((current) => {
+      if (current.includes(modelId)) {
+        return current.filter((id) => id !== modelId);
+      }
+      if (current.length >= MAX_COMPARE_SELECTIONS) {
+        return current;
+      }
+      return [...current, modelId];
+    });
+  };
+
+  const handleCompareConfirm = () => {
+    if (selectedModelIds.length < 2) {
+      return;
+    }
+    const params = createCatalogSearchParams(filters, sort, page);
+    const filtersParam = params.toString();
+    const queryParams = new URLSearchParams();
+    queryParams.set("models", selectedModelIds.join(","));
+    if (filtersParam) {
+      queryParams.set("filters", filtersParam);
+    }
+    router.push(`/catalog/compare?${queryParams.toString()}`);
+    setIsCompareOpen(false);
   };
 
   const totalResults = query.data?.total ?? 0;
@@ -141,8 +192,9 @@ export default function CatalogPage() {
     }
     if (page > totalPages) {
       setPage(totalPages);
+      updateSearchParams(filters, sort, totalPages);
     }
-  }, [page, totalPages, query.data]);
+  }, [filters, page, query.data, sort, totalPages, updateSearchParams]);
 
   const categoryTabs = useMemo(
     () => [{ value: "", label: "All" }, ...MODEL_CATEGORIES.map((item) => ({ value: item.value, label: item.label }))],
@@ -193,7 +245,7 @@ export default function CatalogPage() {
             );
           })}
         </div>
-        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-1">
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Search and filter foundation and fine-tuned models from global vendors.
@@ -201,12 +253,19 @@ export default function CatalogPage() {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
             <span className="text-sm text-slate-500 dark:text-slate-400">{query.data?.total ?? 0} results</span>
-            <Select
-              aria-label="Sort models"
-              value={sort}
-              onChange={(event) => handleSortChange(event.target.value)}
-              options={sortOptions}
-            />
+            <div className="flex flex-wrap items-center gap-3">
+              <CurrencySelector size="sm" />
+              <PricingUnitSelector size="sm" />
+              <Select
+                aria-label="Sort models"
+                value={sort}
+                onChange={(event) => handleSortChange(event.target.value)}
+                options={catalogSortOptions}
+              />
+              <Button type="button" variant="primary" size="sm" onClick={() => setIsCompareOpen(true)}>
+                Compare{selectedModelIds.length ? ` (${selectedModelIds.length})` : ""}
+              </Button>
+            </div>
           </div>
         </div>
         {query.isLoading ? (
@@ -220,32 +279,25 @@ export default function CatalogPage() {
         ) : (
           <ModelList
             models={models}
-            selectedModelIds={selectedModelIds}
-            onToggleCompare={handleToggleModel}
             onSelectCapability={handleCapabilitySelect}
             onSelectLicense={handleLicenseSelect}
           />
         )}
         {totalPages > 1 && (
           <div className="flex justify-center">
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={(nextPage) => setPage(nextPage)}
-            />
+            <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
           </div>
         )}
       </div>
 
-      {selectedModels.length >= 2 && (
-        <ModelComparisonTable
-          models={selectedModels}
-          onRemoveModel={(modelId) =>
-            setSelectedModelIds((current) => current.filter((id) => id !== modelId))
-          }
-          onClear={() => setSelectedModelIds([])}
-        />
-      )}
+      <CompareModelsModal
+        open={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        selectedModelIds={selectedModelIds}
+        onToggleModel={toggleModelSelection}
+        onConfirm={handleCompareConfirm}
+        maxSelections={MAX_COMPARE_SELECTIONS}
+      />
     </div>
   );
 }

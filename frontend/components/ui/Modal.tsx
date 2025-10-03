@@ -2,15 +2,17 @@
 
 import { Fragment, ReactNode, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
+import classNames from "classnames";
 
 interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
   children: ReactNode;
+  panelClassName?: string;
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, children, panelClassName }: ModalProps) {
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -48,7 +50,12 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-xl border border-slate-200 bg-white p-6 text-left shadow-xl transition dark:border-slate-700 dark:bg-slate-900">
+              <Dialog.Panel
+                className={classNames(
+                  "w-full max-w-2xl transform overflow-hidden rounded-xl border border-slate-200 bg-white p-6 text-left shadow-xl transition dark:border-slate-700 dark:bg-slate-900",
+                  panelClassName
+                )}
+              >
                 {title && (
                   <Dialog.Title className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">
                     {title}
