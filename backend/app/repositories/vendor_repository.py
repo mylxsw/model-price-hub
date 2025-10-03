@@ -31,3 +31,11 @@ class VendorRepository(BaseRepository[Vendor]):
         total = session.exec(count_stmt).one()
         results = session.exec(statement.offset(offset).limit(limit)).all()
         return results, int(total)
+
+    def get_by_name(self, session: Session, name: str) -> Optional[Vendor]:
+        statement = (
+            select(Vendor)
+            .where(func.lower(Vendor.name) == name.lower())
+            .limit(1)
+        )
+        return session.exec(statement).first()

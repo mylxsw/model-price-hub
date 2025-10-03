@@ -4,8 +4,14 @@ from ...api.deps import get_current_admin, get_db
 from ...repositories.model_repository import ModelRepository
 from ...repositories.vendor_repository import VendorRepository
 from ...schemas.responses import ModelPaginatedResponse
-from ...schemas.model import ModelCreate, ModelRead, ModelUpdate
-from ...repositories.vendor_repository import VendorRepository
+from ...schemas.model import (
+    ModelBulkExportItem,
+    ModelBulkImportRequest,
+    ModelBulkImportResult,
+    ModelCreate,
+    ModelRead,
+    ModelUpdate,
+)
 from ...services.model_service import ModelService
 from ...services.search_service import ModelSearchParams
 from ...services.vendor_service import VendorService
@@ -46,6 +52,26 @@ def create_model(
     return ModelRead.from_orm(model)
 
 
+@router.get("/export", response_model=list[ModelBulkExportItem])
+def export_models(
+    service: ModelService = Depends(ModelService),
+    repo: ModelRepository = Depends(ModelRepository),
+    session=Depends(get_db),
+):
+    return service.export_models(session, repo)
+
+
+@router.post("/import", response_model=ModelBulkImportResult)
+def import_models(
+    payload: ModelBulkImportRequest,
+    service: ModelService = Depends(ModelService),
+    repo: ModelRepository = Depends(ModelRepository),
+    vendor_repo: VendorRepository = Depends(VendorRepository),
+    session=Depends(get_db),
+):
+    return service.import_models(session, payload, repo, vendor_repo)
+
+
 @router.get("/{model_id}", response_model=ModelRead)
 def get_model(
     model_id: int,
@@ -80,3 +106,5 @@ def delete_model(
 ):
     service.delete_model(session, model_id, repo)
     return None
+
+

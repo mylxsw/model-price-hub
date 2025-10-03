@@ -7,7 +7,14 @@ from sqlmodel import Session
 from ..models.model import Model
 from ..repositories.model_repository import ModelRepository
 from ..repositories.vendor_repository import VendorRepository
-from ..schemas.model import ModelCreate, ModelUpdate
+from ..schemas.model import (
+    ModelBulkExportItem,
+    ModelBulkImportRequest,
+    ModelBulkImportResult,
+    ModelCreate,
+    ModelRead,
+    ModelUpdate,
+)
 from ..utils.pagination import Page, paginate
 from .vendor_service import VendorService
 
@@ -194,3 +201,72 @@ class ModelService:
     def delete_model(self, session: Session, model_id: int, repository: ModelRepository) -> None:
         model = self.get_model(session, model_id, repository)
         repository.delete(session, model)
+
+    def export_models(
+        self,
+        session: Session,
+        repository: ModelRepository,
+    ) -> list[ModelBulkExportItem]:
+        models = repository.list_with_vendor(session)
+        exports: list[ModelBulkExportItem] = []
+        for model in models:
+            read_model = ModelRead.from_orm(model)
+            exports.append(ModelBulkExportItem.from_read_model(read_model))
+        return exports
+
+    def import_models(
+        self,
+        session: Session,
+        payload: ModelBulkImportRequest,
+        repository: ModelRepository,
+        vendor_repository: VendorRepository,
+    ) -> ModelBulkImportResult:
+        created = 0
+        updated = 0
+        errors: list[str] = []
+        seen: set[tuple[str, str]] = set()
+
+        for index, item in enumerate(payload.items, start=1):
+            vendor_key = item.vendor_name.strip().lower()
+            model_key = (item.vendor_model_id or "").strip().lower()
+
+            if not vendor_key:
+                errors.append(f"Row {index}: vendor name is required")
+                continue
+
+            if not model_key:
+                errors.append(f"Row {index}: vendor model id is required")
+                continue
+
+            key = (vendor_key, model_key)
+            if key in seen:
+                errors.append(
+                    f"Row {index}: duplicate entry for vendor '{item.vendor_name}' and vendor model id '{item.vendor_model_id}'"
+                )
+                continue
+            seen.add(key)
+
+            vendor = vendor_repository.get_by_name(session, item.vendor_name)
+            if not vendor:
+                errors.append(
+                    f"Row {index}: vendor '{item.vendor_name}' does not exist"
+                )
+                continue
+
+            existing = repository.get_by_vendor_and_vendor_model_id(
+                session, vendor.id, item.vendor_model_id
+            )
+
+            if existing:
+                update_payload = item.to_model_update()
+                data = self._serialize(update_payload)
+                repository.update(session, existing, data)
+                updated += 1
+            else:
+                create_payload = item.to_model_create(vendor.id)
+                data = self._serialize(create_payload)
+                model = Model(**data)
+                repository.create(session, model)
+                created += 1
+
+        return ModelBulkImportResult(created=created, updated=updated, errors=errors)

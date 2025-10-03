@@ -71,3 +71,58 @@ def test_model_crud_and_public_access(client: TestClient, admin_headers: dict[st
 
     response = client.get("/api/public/models")
     assert response.json()["total"] == 0
+
+
+def test_model_bulk_import_export(client: TestClient, admin_headers: dict[str, str]):
+    vendor_id = create_vendor(client, admin_headers)
+    payload = MODEL_PAYLOAD.copy()
+    payload["vendor_id"] = vendor_id
+
+    create_response = client.post("/api/admin/models", json=payload, headers=admin_headers)
+    assert create_response.status_code == 201
+
+    bulk_payload = {
+        "items": [
+            {
+                "vendorName": VENDOR_PAYLOAD["name"],
+                "model": "gpt-4",
+                "vendorModelId": "gpt-4-2024",
+                "description": "Updated description",
+                "modelCapability": ["chat", "code", "analysis"],
+                "priceModel": "token",
+                "priceCurrency": "USD",
+                "priceData": {"base": {"input_token_1m": 25.0}},
+                "license": ["commercial"],
+            },
+            {
+                "vendorName": VENDOR_PAYLOAD["name"],
+                "model": "gpt-4-mini",
+                "vendorModelId": "gpt-4-mini",
+                "description": "Compact model",
+                "modelCapability": ["chat"],
+                "priceModel": "token",
+                "priceCurrency": "USD",
+                "priceData": {"base": {"input_token_1m": 5.0}},
+                "license": ["commercial"],
+            },
+        ]
+    }
+
+    import_response = client.post(
+        "/api/admin/models/import", json=bulk_payload, headers=admin_headers
+    )
+    assert import_response.status_code == 200
+    import_result = import_response.json()
+    assert import_result["created"] == 1
+    assert import_result["updated"] == 1
+    assert import_result["errors"] == []
+
+    export_response = client.get("/api/admin/models/export", headers=admin_headers)
+    assert export_response.status_code == 200
+    export_items = export_response.json()
+    assert any(item["vendorModelId"] == "gpt-4-mini" for item in export_items)
+    updated_item = next(
+        item for item in export_items if item["vendorModelId"] == "gpt-4-2024"
+    )
+    assert updated_item["description"] == "Updated description"
+    assert "analysis" in updated_item["modelCapability"]
