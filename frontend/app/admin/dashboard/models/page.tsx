@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { ChangeEvent, useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Card } from "../../../../components/ui/Card";
@@ -57,16 +57,125 @@ const toStringArray = (value: unknown): string[] => {
   return deduped;
 };
 
+interface ImportResult {
+  created: number;
+  updated: number;
+  errors: string[];
+}
+
 export default function AdminModelsPage() {
   const { data, refetch, isFetching } = useAdminModels();
   const router = useRouter();
 
   const models = useMemo(() => data?.items ?? [], [data?.items]);
 
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [showImportPanel, setShowImportPanel] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const handleDelete = async (modelId: number) => {
     await client.delete(`/api/admin/models/${modelId}`);
     await refetch();
   };
+
+  const handleExport = useCallback(async () => {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      const items = await client.get<any[]>("/api/admin/models/export");
+      const payload = { items };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      link.href = url;
+      link.download = `models-export-${timestamp}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : "Failed to export models");
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
+
+  const handleFileSelect = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setImportText(text);
+      setImportError(null);
+      setImportResult(null);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "无法读取文件内容");
+    } finally {
+      event.target.value = "";
+    }
+  }, []);
+
+  const parseImportPayload = (raw: string) => {
+    if (!raw.trim()) {
+      throw new Error("请先提供包含批量数据的 JSON 内容");
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      throw new Error("JSON 格式无效，请检查后重新尝试");
+    }
+
+    const extractItems = (value: unknown): any[] => {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object" && Array.isArray((value as { items?: unknown }).items)) {
+        return (value as { items: any[] }).items;
+      }
+      return [];
+    };
+
+    const items = extractItems(parsed);
+    if (items.length === 0) {
+      throw new Error("未找到可导入的数据。请提供包含 items 数组的 JSON");
+    }
+
+    return items.map((item) => {
+      if (!item || typeof item !== "object") {
+        return item;
+      }
+      const record = { ...item } as Record<string, unknown>;
+      if (!record.vendorName && typeof record.vendor_name === "string") {
+        record.vendorName = record.vendor_name;
+      }
+      if (!record.vendorModelId && typeof record.vendor_model_id === "string") {
+        record.vendorModelId = record.vendor_model_id;
+      }
+      return record;
+    });
+  };
+
+  const handleImport = useCallback(async () => {
+    setImportError(null);
+    setImportResult(null);
+    setIsImporting(true);
+    try {
+      const items = parseImportPayload(importText);
+      const result = await client.post<ImportResult>("/api/admin/models/import", { items });
+      setImportResult(result);
+      setImportText("");
+      await refetch();
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "批量导入失败，请稍后重试");
+    } finally {
+      setIsImporting(false);
+    }
+  }, [importText, refetch]);
 
   return (
     <div className="space-y-6">
@@ -75,8 +184,86 @@ export default function AdminModelsPage() {
           <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Models</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Manage catalog entries and their pricing structures.</p>
         </div>
-        <Button onClick={() => router.push("/admin/dashboard/models/new")}>Add model</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" onClick={handleExport} disabled={isExporting}>
+            {isExporting ? "Exporting..." : "Export"}
+          </Button>
+          <Button
+            variant={showImportPanel ? "ghost" : "secondary"}
+            onClick={() => {
+              setShowImportPanel((current) => !current);
+              setImportError(null);
+              setImportResult(null);
+            }}
+          >
+            {showImportPanel ? "Cancel import" : "Import"}
+          </Button>
+          <Button onClick={() => router.push("/admin/dashboard/models/new")}>Add model</Button>
+        </div>
       </div>
+      {exportError && <p className="text-sm text-rose-500">{exportError}</p>}
+      {showImportPanel && (
+        <Card
+          title="Bulk import"
+          description="Upload a JSON file or paste JSON data to create and update models in bulk."
+          actions={
+            <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+              Upload JSON
+            </Button>
+          }
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              The payload should include the vendor name (<code className="font-mono text-xs">vendorName</code>) and the vendor model
+              identifier (<code className="font-mono text-xs">vendorModelId</code>) for each item so the system can match existing
+              records.
+            </p>
+            <textarea
+              value={importText}
+              onChange={(event) => setImportText(event.target.value)}
+              placeholder='{"items": [{"vendorName": "Example Vendor", "model": "My Model", "vendorModelId": "abc-123"}]}'
+              className="h-48 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-700 shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setImportText("");
+                  setImportError(null);
+                  setImportResult(null);
+                }}
+              >
+                Clear
+              </Button>
+              <Button onClick={handleImport} disabled={isImporting}>
+                {isImporting ? "Importing..." : "Import models"}
+              </Button>
+            </div>
+            {importError && <p className="text-sm text-rose-500">{importError}</p>}
+            {importResult && (
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-700/50 dark:bg-emerald-900/40 dark:text-emerald-200">
+                <p>
+                  Created: <span className="font-semibold">{importResult.created}</span>, Updated: <span className="font-semibold">{importResult.updated}</span>
+                </p>
+                {importResult.errors.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-rose-600 dark:text-rose-300">
+                    {importResult.errors.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
       <Card
         title="Models"
         description="All catalog entries across vendors."
