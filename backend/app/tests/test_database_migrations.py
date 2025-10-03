@@ -62,3 +62,4 @@ def test_init_db_adds_release_date_column(tmp_path, monkeypatch):
     columns = {column["name"] for column in inspector.get_columns("model")}
 
     assert "release_date" in columns
+    assert "categories" in columns

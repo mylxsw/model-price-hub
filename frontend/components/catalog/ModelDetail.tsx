@@ -58,6 +58,7 @@ const normalizeStringArray = (input?: unknown): string[] => {
 export function ModelDetail({ model }: ModelDetailProps) {
   const capabilities = normalizeStringArray((model as any).modelCapability);
   const licenses = normalizeStringArray((model as any).license);
+  const categories = normalizeStringArray((model as any).categories);
   const releaseDateRaw = (model as any).release_date;
   const priceData = (model as any).priceData;
   const releaseDate = releaseDateRaw ? new Date(releaseDateRaw) : null;
@@ -137,6 +138,15 @@ export function ModelDetail({ model }: ModelDetailProps) {
             <div className="flex flex-wrap gap-2">
               {capabilities.map((capability) => (
                 <Badge key={capability}>{capability}</Badge>
+              ))}
+            </div>
+          )}
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Badge key={category} color="primary">
+                  {category}
+                </Badge>
               ))}
             </div>
           )}

@@ -12,7 +12,11 @@ def get_vendor_service() -> VendorService:
 router = APIRouter(prefix="/admin/vendors", tags=["admin-vendors"], dependencies=[Depends(get_current_admin)])
 
 
-@router.get("", response_model=PaginatedResponse[VendorRead])
+@router.get(
+    "",
+    response_model=PaginatedResponse[VendorRead],
+    response_model_by_alias=False,
+)
 def list_vendors(
     page: int = 1,
     page_size: int = 20,
@@ -38,7 +42,12 @@ def list_vendors(
     )
 
 
-@router.post("", response_model=VendorRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=VendorRead,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
 def create_vendor(
     payload: VendorCreate,
     repo: VendorRepository = Depends(VendorRepository),
@@ -49,7 +58,9 @@ def create_vendor(
     return VendorRead.from_orm(vendor)
 
 
-@router.get("/{vendor_id}", response_model=VendorRead)
+@router.get(
+    "/{vendor_id}", response_model=VendorRead, response_model_by_alias=False
+)
 def get_vendor(
     vendor_id: int,
     repo: VendorRepository = Depends(VendorRepository),
@@ -60,7 +71,9 @@ def get_vendor(
     return VendorRead.from_orm(vendor)
 
 
-@router.put("/{vendor_id}", response_model=VendorRead)
+@router.put(
+    "/{vendor_id}", response_model=VendorRead, response_model_by_alias=False
+)
 def update_vendor(
     vendor_id: int,
     payload: VendorUpdate,

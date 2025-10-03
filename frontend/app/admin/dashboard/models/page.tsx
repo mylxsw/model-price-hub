@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useCallback, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Card } from "../../../../components/ui/Card";
@@ -15,6 +15,8 @@ import { ApiClient } from "../../../../lib/apiClient";
 import { useAdminModels, useModelFilterOptions } from "../../../../lib/hooks/useModels";
 import { useAuthStore } from "../../../../lib/hooks/useAuth";
 import { useToast } from "../../../../components/ui/ToastProvider";
+import { Pagination } from "../../../../components/ui/Pagination";
+import { MODEL_CATEGORIES } from "../../../../lib/constants";
 
 const client = new ApiClient({
   getToken: () => useAuthStore.getState().token ?? null
@@ -26,14 +28,17 @@ const defaultFilters: ModelFilterValues = {
   priceModel: "",
   priceCurrency: "",
   capability: "",
-  license: ""
+  license: "",
+  category: ""
 };
 
 const priceModelOptions = [
   { label: "All pricing", value: "" },
   { label: "Token based", value: "token" },
   { label: "Per call", value: "call" },
-  { label: "Tiered", value: "tiered" }
+  { label: "Tiered", value: "tiered" },
+  { label: "Free", value: "free" },
+  { label: "Unknown", value: "unknown" }
 ];
 
 const currencyOptions = [
@@ -92,6 +97,7 @@ interface ImportResult {
 
 export default function AdminModelsPage() {
   const [filters, setFilters] = useState<ModelFilterValues>(defaultFilters);
+  const [page, setPage] = useState(1);
   const adminFilters = useMemo(
     () => ({
       search: filters.search || undefined,
@@ -99,9 +105,11 @@ export default function AdminModelsPage() {
       price_model: filters.priceModel || undefined,
       price_currency: filters.priceCurrency || undefined,
       capabilities: filters.capability || undefined,
-      license: filters.license || undefined
+      license: filters.license || undefined,
+      categories: filters.category || undefined,
+      page
     }),
-    [filters]
+    [filters, page]
   );
   const { data, refetch, isFetching } = useAdminModels(adminFilters);
   const { data: filterOptions, isLoading: filtersLoading } = useModelFilterOptions();
@@ -109,6 +117,15 @@ export default function AdminModelsPage() {
   const { showToast } = useToast();
 
   const models = useMemo(() => data?.items ?? [], [data?.items]);
+  const totalModels = data?.total ?? 0;
+  const pageSize = data?.page_size ?? 20;
+  const totalPages = Math.max(1, Math.ceil(totalModels / pageSize));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const vendorOptions = useMemo(
     () => [
@@ -132,6 +149,21 @@ export default function AdminModelsPage() {
       ...((filterOptions?.licenses ?? []).map((license) => ({ label: license, value: license })))
     ],
     [filterOptions?.licenses]
+  );
+
+  const categoryOptions = useMemo(
+    () => {
+      const combined = new Set<string>(["", ...MODEL_CATEGORIES.map((item) => item.value), ...((filterOptions?.categories ?? []) as string[])]);
+      return Array.from(combined).map((category, index) =>
+        index === 0 ? { label: "All categories", value: "" } : { label: category, value: category }
+      );
+    },
+    [filterOptions?.categories]
+  );
+
+  const categoryTabs = useMemo(
+    () => [{ value: "", label: "All" }, ...MODEL_CATEGORIES.map((item) => ({ value: item.value, label: item.label }))],
+    []
   );
 
   const [isExporting, setIsExporting] = useState(false);
@@ -254,6 +286,7 @@ export default function AdminModelsPage() {
 
   const updateFilter = <K extends keyof ModelFilterValues>(field: K, value: ModelFilterValues[K]) => {
     setFilters((current) => ({ ...current, [field]: value }));
+    setPage(1);
   };
 
   return (
@@ -288,7 +321,10 @@ export default function AdminModelsPage() {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => setFilters({ ...defaultFilters })}
+            onClick={() => {
+              setFilters({ ...defaultFilters });
+              setPage(1);
+            }}
             disabled={filtersLoading}
           >
             Reset filters
@@ -321,6 +357,13 @@ export default function AdminModelsPage() {
             value={filters.license}
             onChange={(event) => updateFilter("license", event.target.value)}
             options={licenseOptions}
+            disabled={filtersLoading}
+          />
+          <Select
+            label="Category"
+            value={filters.category}
+            onChange={(event) => updateFilter("category", event.target.value)}
+            options={categoryOptions}
             disabled={filtersLoading}
           />
           <Select
@@ -409,6 +452,26 @@ export default function AdminModelsPage() {
           </span>
         }
       >
+        <div className="mb-4 flex flex-wrap gap-2">
+          {categoryTabs.map((tab) => {
+            const isActive = filters.category === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => updateFilter("category", tab.value)}
+                className={[
+                  "rounded-full px-3 py-1 text-xs font-medium transition",
+                  isActive
+                    ? "bg-primary text-white shadow"
+                    : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                ].join(" ")}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
         <Table
           data={models}
           columns={[
@@ -418,6 +481,17 @@ export default function AdminModelsPage() {
                 <div>
                   <p className="font-medium text-slate-800 dark:text-slate-100">{model.model}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{model.vendor?.name}</p>
+                  {toStringArray(readField(model, "categories", "categories")).slice(0, 3).length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {toStringArray(readField(model, "categories", "categories"))
+                        .slice(0, 3)
+                        .map((category: string) => (
+                          <Badge key={category} color="primary">
+                            {category}
+                          </Badge>
+                        ))}
+                    </div>
+                  )}
                 </div>
               )
             },
@@ -483,6 +557,11 @@ export default function AdminModelsPage() {
             }
           ]}
         />
+        {totalPages > 1 && (
+          <div className="mt-4 flex justify-center">
+            <Pagination currentPage={page} totalPages={totalPages} onPageChange={(nextPage) => setPage(nextPage)} />
+          </div>
+        )}
       </Card>
     </div>
   );

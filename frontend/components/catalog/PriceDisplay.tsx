@@ -43,6 +43,7 @@ interface TierPricing {
     output: number | null;
   };
   requestPrice?: number | null;
+  isFree?: boolean;
 }
 
 const MILLION_TOKEN_LABEL = "1M Tokens";
@@ -226,6 +227,10 @@ const parseTierPricing = (priceData: unknown): TierPricing[] => {
     const billing = normalizeBilling(data.billing, unit);
     const resolvedUnit = ensureUnit(billing, data.unit);
     const requestPrice = parsePrice(data.price_per_unit ?? data.price);
+    const isFree = Boolean(
+      (typeof data.is_free === "boolean" ? data.is_free : undefined) ??
+        (typeof data.isFree === "boolean" ? data.isFree : undefined)
+    );
 
     if (billing === "token") {
       const input = parsePrice(data.input_price_per_unit ?? data.inputPrice ?? requestPrice);
@@ -236,10 +241,11 @@ const parseTierPricing = (priceData: unknown): TierPricing[] => {
         billing,
         unit: resolvedUnit,
         tokenRates: {
-          input,
-          cached,
-          output
-        }
+          input: isFree ? null : input,
+          cached: isFree ? null : cached,
+          output: isFree ? null : output
+        },
+        isFree
       };
     }
 
@@ -247,7 +253,8 @@ const parseTierPricing = (priceData: unknown): TierPricing[] => {
       name,
       billing,
       unit: resolvedUnit,
-      requestPrice
+      requestPrice: isFree ? null : requestPrice,
+      isFree
     };
   });
 };
@@ -328,7 +335,27 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
   }
 
   if (normalizedModel === "free") {
-    return <Badge color="success">Free</Badge>;
+    if (variant === "compact") {
+      return <Badge color="success">Free</Badge>;
+    }
+    return (
+      <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <Badge color="success">Free</Badge>
+        <p>This model is free to use based on the latest catalog information.</p>
+      </div>
+    );
+  }
+
+  if (normalizedModel === "unknown") {
+    if (variant === "compact") {
+      return <span className="text-xs text-slate-500 dark:text-slate-400">Pricing unavailable</span>;
+    }
+    return (
+      <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        <Badge color="primary">Pricing unknown</Badge>
+        <p>Pricing for this model is not yet available. Check back later or contact the provider.</p>
+      </div>
+    );
   }
 
   if (normalizedModel === "token" || normalizedModel === "tokens") {
@@ -460,6 +487,9 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
 
   if (normalizedModel === "tiered" || normalizedModel === "subscription") {
     const buildTokenEntries = (tier: TierPricing): Array<{ label: string; value: string }> => {
+      if (tier.isFree) {
+        return [{ label: "Status", value: "Free" }];
+      }
       if (tier.billing !== "token" || !tier.tokenRates) return [];
       const convertedUnit = formatPricingUnit();
       const entries = [
@@ -486,6 +516,9 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
     };
 
     const buildTierSummary = (tier: TierPricing): string => {
+      if (tier.isFree) {
+        return "Free tier";
+      }
       const convertedUnit = formatPricingUnit();
       if (tier.billing === "token" && tier.tokenRates) {
         const primary = firstDefined(tier.tokenRates.input, tier.tokenRates.output, tier.tokenRates.cached);
@@ -521,7 +554,11 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                 </div>
                 <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">
                   {tier.billing === "token" ? (
-                    entries.length > 0 ? (
+                    tier.isFree ? (
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
+                        Free tier
+                      </span>
+                    ) : entries.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {entries.map((entry) => (
                           <span
@@ -540,9 +577,11 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                     )
                   ) : (
                     <span>
-                      {tier.requestPrice !== null && tier.requestPrice !== undefined
-                        ? `${formatCurrency(tier.requestPrice, price_currency)} / ${tier.unit}`
-                        : "Custom pricing"}
+                      {tier.isFree
+                        ? "Free tier"
+                        : tier.requestPrice !== null && tier.requestPrice !== undefined
+                          ? `${formatCurrency(tier.requestPrice, price_currency)} / ${tier.unit}`
+                          : "Custom pricing"}
                     </span>
                   )}
                 </div>
@@ -586,7 +625,11 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
             )}
           </div>
           {activeTier.billing === "token" ? (
-            entries.length > 0 ? (
+            activeTier.isFree ? (
+              <span className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
+                Free tier
+              </span>
+            ) : entries.length > 0 ? (
               <div className="flex flex-wrap items-center gap-2">
                 {entries.map((entry) => (
                   <span
@@ -605,9 +648,11 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
             )
           ) : (
             <span className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-              {activeTier.requestPrice !== null && activeTier.requestPrice !== undefined
-                ? `${formatCurrency(activeTier.requestPrice, price_currency)} / ${activeTier.unit}`
-                : "Custom pricing"}
+              {activeTier.isFree
+                ? "Free tier"
+                : activeTier.requestPrice !== null && activeTier.requestPrice !== undefined
+                  ? `${formatCurrency(activeTier.requestPrice, price_currency)} / ${activeTier.unit}`
+                  : "Custom pricing"}
             </span>
           )}
         </div>
@@ -639,27 +684,37 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                 </div>
                 {tier.billing === "token" && tier.tokenRates && (
                   <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-                    {buildTokenEntries(tier).map((entry) => (
-                      <span
-                        key={entry.label}
-                        className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                      >
-                        <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                          {entry.label}
-                        </span>
-                        {entry.value}
+                    {tier.isFree ? (
+                      <span className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
+                        Free tier
                       </span>
-                    ))}
-                    {tier.tokenRates.input === null &&
-                      tier.tokenRates.cached === null &&
-                      tier.tokenRates.output === null && <span>No token rates configured.</span>}
+                    ) : (
+                      <>
+                        {buildTokenEntries(tier).map((entry) => (
+                          <span
+                            key={entry.label}
+                            className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                          >
+                            <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              {entry.label}
+                            </span>
+                            {entry.value}
+                          </span>
+                        ))}
+                        {tier.tokenRates.input === null &&
+                          tier.tokenRates.cached === null &&
+                          tier.tokenRates.output === null && <span>No token rates configured.</span>}
+                      </>
+                    )}
                   </div>
                 )}
                 {tier.billing === "requests" && (
                   <div className="text-xs text-slate-600 dark:text-slate-300">
-                    {tier.requestPrice !== null && tier.requestPrice !== undefined
-                      ? `${formatCurrency(tier.requestPrice, price_currency)} / ${tier.unit}`
-                      : "Custom pricing"}
+                    {tier.isFree
+                      ? "Free tier"
+                      : tier.requestPrice !== null && tier.requestPrice !== undefined
+                        ? `${formatCurrency(tier.requestPrice, price_currency)} / ${tier.unit}`
+                        : "Custom pricing"}
                   </div>
                 )}
               </div>

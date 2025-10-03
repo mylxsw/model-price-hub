@@ -7,6 +7,7 @@ import { Input } from "../ui/Input";
 import { Select } from "../ui/Select";
 import { useModelFilterOptions } from "../../lib/hooks/useModels";
 import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
+import { MODEL_CATEGORIES } from "../../lib/constants";
 
 export interface ModelFilterValues {
   search: string;
@@ -15,6 +16,7 @@ export interface ModelFilterValues {
   priceCurrency: string;
   capability: string;
   license: string;
+  category: string;
 }
 
 interface ModelFilterPanelProps {
@@ -27,7 +29,9 @@ const priceModelOptions = [
   { label: "All pricing", value: "" },
   { label: "Per token", value: "token" },
   { label: "Per call", value: "call" },
-  { label: "Tiered", value: "tiered" }
+  { label: "Tiered", value: "tiered" },
+  { label: "Free", value: "free" },
+  { label: "Unknown", value: "unknown" }
 ];
 
 export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanelProps) {
@@ -77,6 +81,16 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
     [filterOptions?.licenses]
   );
 
+  const categoryOptions = useMemo(() => {
+    const apiCategories = filterOptions?.categories ?? [];
+    const combined = new Set<string>(["", ...MODEL_CATEGORIES.map((item) => item.value), ...apiCategories]);
+    return Array.from(combined).map((category, index) =>
+      index === 0
+        ? { label: "All categories", value: "" }
+        : { label: category, value: category }
+    );
+  }, [filterOptions?.categories]);
+
   return (
     <aside className="flex h-full max-h-full w-full flex-col gap-6 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-xl transition dark:border-slate-800 dark:bg-slate-900/80">
       <div className="flex items-start justify-between gap-4">
@@ -114,6 +128,13 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
         value={localValues.license}
         onChange={(event) => updateField("license", event.target.value)}
         options={licenseOptions}
+        disabled={optionsLoading}
+      />
+      <Select
+        label="Category"
+        value={localValues.category}
+        onChange={(event) => updateField("category", event.target.value)}
+        options={categoryOptions}
         disabled={optionsLoading}
       />
       <Select

@@ -17,6 +17,7 @@ MODEL_PAYLOAD = {
     "price_model": "token",
     "price_currency": "USD",
     "price_data": {"base": {"input_token_1m": 30.0, "output_token_1m": 60.0}},
+    "categories": ["文本生成"],
     "release_date": "2024-01-01",
     "note": "Flagship model",
     "license": ["commercial"],
@@ -43,6 +44,7 @@ def test_model_crud_and_public_access(client: TestClient, admin_headers: dict[st
     assert model["price_data"]["base"]["input_token_1m"] == 30.0
     assert model["release_date"] == "2024-01-01"
     assert "commercial" in model["license"]
+    assert "文本生成" in model["categories"]
 
     response = client.put(
         f"/api/admin/models/{model_id}",
@@ -65,6 +67,7 @@ def test_model_crud_and_public_access(client: TestClient, admin_headers: dict[st
     assert detail["release_date"] == "2024-01-01"
     assert "analysis" in detail["model_capability"]
     assert "commercial" in detail["license"]
+    assert "文本生成" in detail["categories"]
 
     response = client.delete(f"/api/admin/models/{model_id}", headers=admin_headers)
     assert response.status_code == 204
@@ -92,6 +95,7 @@ def test_model_bulk_import_export(client: TestClient, admin_headers: dict[str, s
                 "priceModel": "token",
                 "priceCurrency": "USD",
                 "priceData": {"base": {"input_token_1m": 25.0}},
+                "categories": ["文本生成"],
                 "license": ["commercial"],
             },
             {
@@ -103,6 +107,7 @@ def test_model_bulk_import_export(client: TestClient, admin_headers: dict[str, s
                 "priceModel": "token",
                 "priceCurrency": "USD",
                 "priceData": {"base": {"input_token_1m": 5.0}},
+                "categories": ["文本生成"],
                 "license": ["commercial"],
             },
         ]

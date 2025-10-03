@@ -83,6 +83,29 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
             </tr>
             <tr>
               <th scope="row" className="whitespace-nowrap px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Categories
+              </th>
+              {models.map((model) => {
+                const categories = normalizeStringArray(model.categories);
+                return (
+                  <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
+                    {categories.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {categories.map((category) => (
+                          <Badge key={category} color="primary">
+                            {category}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+            <tr>
+              <th scope="row" className="whitespace-nowrap px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Capabilities
               </th>
               {models.map((model) => {

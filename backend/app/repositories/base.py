@@ -26,6 +26,7 @@ class BaseRepository(Generic[ModelType]):
 
     def delete(self, session: Session, obj: ModelType) -> None:
         session.delete(obj)
+        session.flush()
 
     def update(self, session: Session, obj: ModelType, data: dict) -> ModelType:
         for field, value in data.items():

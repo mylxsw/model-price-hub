@@ -20,6 +20,7 @@ class ModelBase(BaseModel):
     price_model: Optional[str] = Field(default=None, alias="priceModel")
     price_currency: Optional[str] = Field(default=None, alias="priceCurrency")
     price_data: Optional[dict] = Field(default=None, alias="priceData")
+    categories: Optional[List[str]] = Field(default=None, alias="categories")
     release_date: Optional[date] = Field(default=None, alias="releaseDate")
     note: Optional[str] = None
     license: Optional[List[str]] = None
@@ -31,7 +32,7 @@ class ModelBase(BaseModel):
     @root_validator(pre=True)
     def ensure_lists(cls, values):  # type: ignore[override]
         mutable = dict(values)
-        for field in ("model_capability", "license"):
+        for field in ("model_capability", "license", "categories"):
             value = mutable.get(field)
             if isinstance(value, str):
                 mutable[field] = [value]
@@ -55,6 +56,7 @@ class ModelUpdate(BaseModel):
     price_model: Optional[str] = None
     price_currency: Optional[str] = None
     price_data: Optional[dict] = None
+    categories: Optional[List[str]] = None
     release_date: Optional[date] = None
     note: Optional[str] = None
     license: Optional[List[str]] = None
@@ -115,6 +117,10 @@ class ModelRead(ModelBase):
     def parse_capabilities(cls, value):  # type: ignore[override]
         return cls._decode_string_list(value)
 
+    @validator("categories", pre=True)
+    def parse_categories(cls, value):  # type: ignore[override]
+        return cls._decode_string_list(value)
+
     @validator("price_data", pre=True)
     def parse_price(cls, value):  # type: ignore[override]
         seen = set()
@@ -145,6 +151,7 @@ class ModelBulkItem(BaseModel):
     price_model: Optional[str] = Field(default=None, alias="priceModel")
     price_currency: Optional[str] = Field(default=None, alias="priceCurrency")
     price_data: Optional[dict] = Field(default=None, alias="priceData")
+    categories: Optional[List[str]] = Field(default=None, alias="categories")
     release_date: Optional[date] = Field(default=None, alias="releaseDate")
     note: Optional[str] = None
     license: Optional[List[str]] = None
@@ -156,7 +163,7 @@ class ModelBulkItem(BaseModel):
     @root_validator(pre=True)
     def ensure_lists(cls, values):  # type: ignore[override]
         mutable = dict(values)
-        for field in ("model_capability", "license"):
+        for field in ("model_capability", "license", "categories"):
             value = mutable.get(field)
             if isinstance(value, str):
                 mutable[field] = [value]
@@ -200,6 +207,7 @@ class ModelBulkExportItem(ModelBulkItem):
             priceModel=model.price_model,
             priceCurrency=model.price_currency,
             priceData=model.price_data,
+            categories=model.categories,
             releaseDate=model.release_date,
             note=model.note,
             license=model.license,

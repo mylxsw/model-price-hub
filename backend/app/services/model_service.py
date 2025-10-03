@@ -1,4 +1,5 @@
 import json
+import json
 from typing import Iterable, Optional
 
 from fastapi import HTTPException
@@ -67,7 +68,7 @@ class ModelService:
 
             return None
 
-        for key in ("model_capability", "license"):
+        for key in ("model_capability", "license", "categories"):
             if key in data:
                 data[key] = _prepare_string_list(data[key])
 
@@ -93,6 +94,8 @@ class ModelService:
         if not data:
             return None
         model_type = model.price_model or ""
+        if model_type == "free":
+            return 0.0
         if model_type == "token":
             base = data.get("base")
             if isinstance(base, dict):
@@ -146,6 +149,7 @@ class ModelService:
         price_model: Optional[str] = None,
         price_currency: Optional[str] = None,
         license_values: Optional[Iterable[str]] = None,
+        categories: Optional[Iterable[str]] = None,
         status: Optional[str] = None,
         search: Optional[str] = None,
         sort: Optional[str] = None,
@@ -168,6 +172,7 @@ class ModelService:
             price_model=price_model,
             price_currency=price_currency,
             license_values=license_values,
+            categories=categories,
             status=status,
             search=search,
             offset=offset,

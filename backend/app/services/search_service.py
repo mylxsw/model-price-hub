@@ -20,6 +20,7 @@ class ModelSearchParams:
         price_model: Optional[str] = Query(default=None),
         price_currency: Optional[str] = Query(default=None),
         license: Optional[str] = Query(default=None),
+        categories: Optional[str] = Query(default=None),
         status: Optional[str] = Query(default=None),
         search: Optional[str] = Query(default=None),
         sort: Optional[str] = Query(default=None),
@@ -37,6 +38,7 @@ class ModelSearchParams:
         self.price_model = price_model
         self.price_currency = price_currency
         self.license = parse_csv(license)
+        self.categories = parse_csv(categories)
         self.status = status
         self.search = search
         self.sort = sort
@@ -56,6 +58,7 @@ class ModelSearchParams:
             "price_model": self.price_model,
             "price_currency": self.price_currency,
             "license_values": self.license,
+            "categories": self.categories,
             "status": self.status,
             "search": self.search,
             "sort": self.sort,
