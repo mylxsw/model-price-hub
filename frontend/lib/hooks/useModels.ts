@@ -60,6 +60,30 @@ export function useModels(filters: ModelFilters = {}) {
   });
 }
 
+export function useModelsByIds(modelIds: number[]) {
+  const token = useAuthStore((state) => state.token);
+  const client = new ApiClient({ getToken: () => token });
+
+  return useQuery({
+    queryKey: ["models-by-ids", [...modelIds].sort(), token],
+    queryFn: async () => {
+      const uniqueIds = Array.from(new Set(modelIds.filter((id) => Number.isInteger(id))));
+      if (!uniqueIds.length) {
+        return [] as any[];
+      }
+      const responses = await Promise.all(uniqueIds.map((id) => client.get<any>(`/api/public/models/${id}`)));
+      const lookup = new Map<number, any>();
+      uniqueIds.forEach((id, index) => {
+        lookup.set(id, responses[index]);
+      });
+      return modelIds
+        .map((id) => lookup.get(id))
+        .filter((model): model is any => Boolean(model));
+    },
+    enabled: modelIds.length > 0
+  });
+}
+
 export function useAdminModels(filters: Record<string, string | number | undefined> = {}) {
   const token = useAuthStore((state) => state.token);
   const client = new ApiClient({ getToken: () => token });

@@ -34,8 +34,6 @@ export interface CatalogModel {
 
 interface ModelListProps {
   models: CatalogModel[];
-  selectedModelIds?: number[];
-  onToggleCompare?: (modelId: number) => void;
   onSelectCapability?: (capability: string) => void;
   onSelectLicense?: (license: string) => void;
 }
@@ -88,13 +86,7 @@ const getVendorImage = (model: CatalogModel): string | null => {
   return fromVendor ?? fromModel ?? null;
 };
 
-export function ModelList({
-  models,
-  selectedModelIds = [],
-  onToggleCompare,
-  onSelectCapability,
-  onSelectLicense
-}: ModelListProps) {
+export function ModelList({ models, onSelectCapability, onSelectLicense }: ModelListProps) {
   const [activeDescription, setActiveDescription] = useState<{ title: string; content: string } | null>(null);
 
   const markdownComponents: Components = {
@@ -153,9 +145,6 @@ export function ModelList({
         <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
           <thead className="bg-slate-50/80 dark:bg-slate-900/50">
             <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              <th scope="col" className="w-28 px-3 py-3">
-                Compare
-              </th>
               <th scope="col" className="w-32 px-3 py-3 text-center">
                 Vendor
               </th>
@@ -179,7 +168,6 @@ export function ModelList({
               const licenses = normalizeStringArray(model.license);
               const categories = normalizeStringArray(model.categories);
               const releaseDate = formatReleaseDate(model.release_date);
-              const isSelected = selectedModelIds.includes(model.id);
               const vendorName = model.vendor?.name ?? "Unknown vendor";
               const vendorImage = getVendorImage(model);
               const vendorInitial = vendorName.charAt(0).toUpperCase();
@@ -191,18 +179,6 @@ export function ModelList({
                   key={model.id}
                   className="transition hover:bg-slate-50/80 dark:hover:bg-slate-900/40"
                 >
-                  <td className="w-28 px-3 py-4 align-top">
-                    <label className="flex items-center justify-center">
-                      <span className="sr-only">{`Select ${model.model} for comparison`}</span>
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                        checked={isSelected}
-                        onChange={() => onToggleCompare?.(model.id)}
-                        aria-label={`Select ${model.model} for comparison`}
-                      />
-                    </label>
-                  </td>
                   <td className="w-32 px-3 py-4 align-top text-center">
                     <div className="flex flex-col items-center gap-2">
                       <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
