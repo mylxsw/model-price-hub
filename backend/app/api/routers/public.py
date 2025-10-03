@@ -4,11 +4,13 @@ from ...api.deps import get_db
 from ...repositories.model_repository import ModelRepository
 from ...repositories.vendor_repository import VendorRepository
 from ...schemas.common import PaginatedResponse
+from ...schemas.currency import CurrencyConfig
 from ...schemas.model import ModelRead
 from ...schemas.vendor import VendorRead
 from ...services.model_service import ModelService
 from ...services.search_service import ModelSearchParams, VendorQueryParams
 from ...services.vendor_service import VendorService
+from ...core.config import Settings, get_settings
 
 def get_vendor_service() -> VendorService:
     return VendorService()
@@ -64,3 +66,15 @@ def get_model(
 ):
     model = service.get_model(session, model_id, repository=repo)
     return ModelRead.from_orm(model)
+
+
+@router.get("/currency", response_model=CurrencyConfig)
+def get_currency_config(settings: Settings = Depends(get_settings)) -> CurrencyConfig:
+    exchange_rates = {code.upper(): float(rate) for code, rate in settings.currency_exchange_rates.items()}
+    display_currency = settings.display_currency.upper()
+    available = sorted(exchange_rates.keys())
+    return CurrencyConfig(
+        displayCurrency=display_currency,
+        exchangeRates=exchange_rates,
+        availableCurrencies=available,
+    )
