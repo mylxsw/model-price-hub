@@ -109,3 +109,18 @@ class ModelRepository(BaseRepository[Model]):
         else:
             results = session.exec(statement.offset(offset).limit(limit)).all()
         return results, int(total)
+
+    def get_by_vendor_and_vendor_model_id(
+        self, session: Session, vendor_id: int, vendor_model_id: str
+    ) -> Optional[Model]:
+        statement = (
+            select(Model)
+            .where(Model.vendor_id == vendor_id)
+            .where(func.lower(Model.vendor_model_id) == vendor_model_id.lower())
+            .limit(1)
+        )
+        return session.exec(statement).first()
+
+    def list_with_vendor(self, session: Session) -> Sequence[Model]:
+        statement = select(Model).options(selectinload(Model.vendor))
+        return session.exec(statement).all()
