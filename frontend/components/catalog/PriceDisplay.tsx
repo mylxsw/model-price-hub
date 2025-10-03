@@ -396,19 +396,19 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
         tier.tokenRates.input !== null && tier.tokenRates.input !== undefined
           ? {
               label: "Input",
-              value: `${formatCurrency(tier.tokenRates.input, price_currency)} / ${tier.unit}`
+              value: `${formatCurrency(tier.tokenRates.input, tier.tokenRates.input ? price_currency : undefined)} / ${tier.unit}`
             }
           : null,
         tier.tokenRates.cached !== null && tier.tokenRates.cached !== undefined
           ? {
               label: "Cached",
-              value: `${formatCurrency(tier.tokenRates.cached, price_currency)} / ${tier.unit}`
+              value: `${formatCurrency(tier.tokenRates.cached, tier.tokenRates.cached ? price_currency : undefined)} / ${tier.unit}`
             }
           : null,
         tier.tokenRates.output !== null && tier.tokenRates.output !== undefined
           ? {
               label: "Output",
-              value: `${formatCurrency(tier.tokenRates.output, price_currency)} / ${tier.unit}`
+              value: `${formatCurrency(tier.tokenRates.output, tier.tokenRates.output ? price_currency : undefined)} / ${tier.unit}`
             }
           : null
       ].filter(Boolean) as Array<{ label: string; value: string }>;
