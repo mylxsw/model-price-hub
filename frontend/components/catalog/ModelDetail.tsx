@@ -56,13 +56,25 @@ const normalizeStringArray = (input?: unknown): string[] => {
 
 
 export function ModelDetail({ model }: ModelDetailProps) {
-  const capabilities = normalizeStringArray((model as any).modelCapability);
-  const licenses = normalizeStringArray((model as any).license);
-  const categories = normalizeStringArray((model as any).categories);
-  const releaseDateRaw = (model as any).release_date;
-  const priceData = (model as any).priceData;
+  const record = model as Record<string, unknown>;
+  const readField = <T = unknown>(...keys: string[]): T | undefined => {
+    for (const key of keys) {
+      if (key && Object.prototype.hasOwnProperty.call(record, key)) {
+        return record[key] as T;
+      }
+    }
+    return undefined;
+  };
+
+  const capabilities = normalizeStringArray(readField("modelCapability", "model_capability", "capabilities"));
+  const licenses = normalizeStringArray(readField("license", "licenses"));
+  const categories = normalizeStringArray(readField("categories"));
+  const releaseDateRaw = readField<string | null>("releaseDate", "release_date");
+  const priceData = readField<Record<string, unknown> | string>("priceData", "price_data");
   const releaseDate = releaseDateRaw ? new Date(releaseDateRaw) : null;
-  const modelUrl = (model as any).modelUrl;
+  const modelUrl = readField<string>("modelUrl", "model_url");
+  const maxContextTokens = readField<number | string>("max_context_tokens", "maxContextTokens");
+  const maxOutputTokens = readField<number | string>("max_output_tokens", "maxOutputTokens");
   const modelImage =
     (model as any).model_image ?? (model as any).modelImage ?? (model as any).image ?? null;
 
@@ -134,11 +146,30 @@ export function ModelDetail({ model }: ModelDetailProps) {
               Released {new Intl.DateTimeFormat("en", { year: "numeric", month: "long", day: "numeric" }).format(releaseDate)}
             </div>
           )}
-          {capabilities.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {capabilities.map((capability) => (
-                <Badge key={capability}>{capability}</Badge>
-              ))}
+          {(capabilities.length > 0 || licenses.length > 0) && (
+            <div className="space-y-3">
+              {capabilities.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Capabilities</span>
+                  <div className="flex flex-wrap gap-2">
+                    {capabilities.map((capability) => (
+                      <Badge key={capability}>{capability}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {licenses.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Licenses</span>
+                  <div className="flex flex-wrap gap-2">
+                    {licenses.map((license) => (
+                      <Badge key={license} color="success">
+                        {license}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {categories.length > 0 && (
@@ -150,13 +181,20 @@ export function ModelDetail({ model }: ModelDetailProps) {
               ))}
             </div>
           )}
-          {licenses.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {licenses.map((license) => (
-                <Badge key={license} color="success">
-                  {license}
-                </Badge>
-              ))}
+          {(maxContextTokens || maxOutputTokens) && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {maxContextTokens && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+                  <span className="font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Max context</span>
+                  <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">{formatTokens(maxContextTokens)}</p>
+                </div>
+              )}
+              {maxOutputTokens && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+                  <span className="font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Max output</span>
+                  <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">{formatTokens(maxOutputTokens)}</p>
+                </div>
+              )}
             </div>
           )}
           {model.note && <p className="text-sm text-slate-500 dark:text-slate-400">{model.note}</p>}
@@ -165,8 +203,8 @@ export function ModelDetail({ model }: ModelDetailProps) {
       <Card title="Pricing" description="Detailed pricing information across different tiers and usage models.">
         <PriceDisplay
           price={{
-            price_model: (model as any).priceModel,
-            price_currency: (model as any).priceCurrency,
+            price_model: readField<string>("priceModel", "price_model"),
+            price_currency: readField<string>("priceCurrency", "price_currency"),
             price_data: priceData
           }}
           variant="detailed"
@@ -174,4 +212,23 @@ export function ModelDetail({ model }: ModelDetailProps) {
       </Card>
     </div>
   );
+}
+
+function formatTokens(value?: number | string | null): string {
+  if (value === undefined || value === null) {
+    return "—";
+  }
+  const numeric = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return "—";
+  }
+  if (numeric >= 1_000_000) {
+    const millions = Math.round(numeric / 1_000_000);
+    return `${millions}M tokens`;
+  }
+  if (numeric >= 1_000) {
+    const thousands = Math.round(numeric / 1_000);
+    return `${thousands}K tokens`;
+  }
+  return `${Math.round(numeric)} tokens`;
 }

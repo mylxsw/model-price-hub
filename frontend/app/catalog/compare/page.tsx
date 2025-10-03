@@ -56,16 +56,16 @@ export default function CatalogComparePage() {
 
   const heading = (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex items-center gap-3">
-        <Button type="button" variant="secondary" onClick={handleNavigateToCatalog}>
-          ← Back to catalog
-        </Button>
+      <div className="flex items-center justify-between w-full gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Model comparison</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Review pricing, capabilities, and release information side by side.
           </p>
         </div>
+        <Button type="button" variant="secondary" onClick={handleNavigateToCatalog}>
+          ← Back
+        </Button>
       </div>
     </div>
   );

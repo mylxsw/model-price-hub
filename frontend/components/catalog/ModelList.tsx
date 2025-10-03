@@ -1,5 +1,5 @@
 import Link from "next/link";
-import React, { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -36,6 +36,8 @@ interface ModelListProps {
   models: CatalogModel[];
   onSelectCapability?: (capability: string) => void;
   onSelectLicense?: (license: string) => void;
+  toolbarLeft?: ReactNode;
+  toolbarRight?: ReactNode;
 }
 
 export const normalizeStringArray = (value: unknown): string[] => {
@@ -80,13 +82,25 @@ export const formatReleaseDate = (value?: string | null) => {
 
 const getVendorImage = (model: CatalogModel): string | null => {
   const fromVendor = model.vendor?.vendor_image ?? model.vendor?.vendorImage ?? model.vendor?.image ?? null;
-  const extras = model as Record<string, unknown>;
+  const extras = model as unknown as Record<string, unknown>;
   const extraImage = extras.vendor_image ?? extras.vendorImage ?? extras.vendorLogo;
   const fromModel = typeof extraImage === "string" ? extraImage : null;
   return fromVendor ?? fromModel ?? null;
 };
 
-export function ModelList({ models, onSelectCapability, onSelectLicense }: ModelListProps) {
+const readField = <T = unknown>(model: Record<string, unknown>, ...keys: string[]): T | undefined => {
+  if (!model) {
+    return undefined;
+  }
+  for (const key of keys) {
+    if (key && Object.prototype.hasOwnProperty.call(model, key)) {
+      return model[key] as T;
+    }
+  }
+  return undefined;
+};
+
+export function ModelList({ models, onSelectCapability, onSelectLicense, toolbarLeft, toolbarRight }: ModelListProps) {
   const [activeDescription, setActiveDescription] = useState<{ title: string; content: string } | null>(null);
 
   const markdownComponents: Components = {
@@ -135,15 +149,19 @@ export function ModelList({ models, onSelectCapability, onSelectLicense }: Model
     )
   }), [markdownComponents]);
 
-  if (!models.length) {
-    return <Card title="No models found">Try adjusting your filters or search query.</Card>;
-  }
+  const renderToolbar = toolbarLeft || toolbarRight ? (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+      <div className="flex flex-wrap items-center gap-3">{toolbarLeft}</div>
+      <div className="flex flex-1 justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-3">{toolbarRight}</div>
+      </div>
+    </div>
+  ) : null;
 
-  return (
-    <Card className="p-0">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-          <thead className="bg-slate-50/80 dark:bg-slate-900/50">
+  const tableContent = models.length ? (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+        <thead className="bg-slate-50/80 dark:bg-slate-900/50">
             <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <th scope="col" className="w-32 px-3 py-3 text-center">
                 Vendor
@@ -164,10 +182,24 @@ export function ModelList({ models, onSelectCapability, onSelectLicense }: Model
           </thead>
           <tbody className="divide-y divide-slate-200 text-sm text-slate-600 dark:divide-slate-800 dark:text-slate-300">
             {models.map((model) => {
-              const capabilities = normalizeStringArray(model.modelCapability);
-              const licenses = normalizeStringArray(model.license);
-              const categories = normalizeStringArray(model.categories);
-              const releaseDate = formatReleaseDate(model.release_date);
+              const record = model as unknown as Record<string, unknown>;
+              const capabilities = normalizeStringArray(
+                readField(record, "modelCapability", "model_capability", "capabilities")
+              );
+              const licenses = normalizeStringArray(
+                readField(record, "license", "licenses")
+              );
+              const categories = normalizeStringArray(readField(record, "categories"));
+              const releaseDate = formatReleaseDate(
+                readField<string | null>(record, "releaseDate", "release_date") ?? null
+              );
+              const priceModel = readField<string>(record, "priceModel", "price_model");
+              const priceCurrency = readField<string>(record, "priceCurrency", "price_currency");
+              const priceData = readField<Record<string, unknown> | string>(
+                record,
+                "priceData",
+                "price_data"
+              );
               const vendorName = model.vendor?.name ?? "Unknown vendor";
               const vendorImage = getVendorImage(model);
               const vendorInitial = vendorName.charAt(0).toUpperCase();
@@ -246,9 +278,9 @@ export function ModelList({ models, onSelectCapability, onSelectLicense }: Model
                   <td className="w-64 px-4 py-4 align-top text-left">
                     <PriceDisplay
                       price={{
-                        price_model: model.priceModel,
-                        price_currency: model.priceCurrency,
-                        price_data: model.priceData
+                        price_model: priceModel,
+                        price_currency: priceCurrency,
+                        price_data: priceData
                       }}
                       variant="compact"
                     />
@@ -265,15 +297,27 @@ export function ModelList({ models, onSelectCapability, onSelectLicense }: Model
                       href={`/catalog/${model.id}`}
                       className="text-sm font-medium text-primary hover:text-primary-dark"
                     >
-                      View details →
+                      View
                     </Link>
                   </td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
-      </div>
+      </table>
+    </div>
+  ) : (
+    <div className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+      No models found. Try adjusting your filters or search query.
+    </div>
+  );
+
+  return (
+    <>
+      <Card className="p-0">
+        {renderToolbar}
+        {tableContent}
+      </Card>
       <Modal open={Boolean(activeDescription)} onClose={() => setActiveDescription(null)} title={activeDescription?.title ?? ""}>
         {activeDescription && (
           <div className="space-y-4">
@@ -283,6 +327,6 @@ export function ModelList({ models, onSelectCapability, onSelectLicense }: Model
           </div>
         )}
       </Modal>
-    </Card>
+    </>
   );
 }

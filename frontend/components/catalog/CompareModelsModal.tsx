@@ -18,6 +18,7 @@ interface CompareModelsModalProps {
   onToggleModel: (modelId: number) => void;
   onConfirm: () => void;
   maxSelections?: number;
+  defaultFilters?: Partial<ModelFilterValues>;
 }
 
 const priceModelOptions = [
@@ -35,9 +36,10 @@ export function CompareModelsModal({
   selectedModelIds,
   onToggleModel,
   onConfirm,
-  maxSelections = 5
+  maxSelections = 5,
+  defaultFilters: externalDefaults
 }: CompareModelsModalProps) {
-  const [filters, setFilters] = useState<ModelFilterValues>({ ...defaultModelFilters });
+  const [filters, setFilters] = useState<ModelFilterValues>({ ...defaultModelFilters, ...externalDefaults });
   const [sort, setSort] = useState<string>(defaultCatalogSort);
   const [page, setPage] = useState<number>(1);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -62,8 +64,11 @@ export function CompareModelsModal({
   useEffect(() => {
     if (!open) {
       setSelectionError(null);
+      setFilters({ ...defaultModelFilters, ...externalDefaults });
+      setSort(defaultCatalogSort);
+      setPage(1);
     }
-  }, [open]);
+  }, [open, externalDefaults]);
 
   const updateFilters = <K extends keyof ModelFilterValues>(key: K, value: ModelFilterValues[K]) => {
     setFilters((current) => ({

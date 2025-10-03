@@ -1,0 +1,1027 @@
+{
+  "query_info": {
+    "models_queried": [
+      "Moonshot-Kimi-K2-Instruct",
+      "qwen3-max",
+      "deepseek-v3.2-exp",
+      "glm-4.5",
+      "wan2.5-i2v-preview"
+    ],
+    "total_queries": 5,
+    "extraction_time": "2025-10-04T04:08:51.207930"
+  },
+  "total_models_found": 26,
+  "models": [
+    {
+      "name": "Moonshot-Kimi-K2-Instruct",
+      "model_id": "Moonshot-Kimi-K2-Instruct",
+      "description": "Kimi-K2是月之暗面提供的国内首个开源万亿参数MoE模型，激活参数达 320 亿，具有卓越的编码和工具调用能力。",
+      "provider": "moonshot-ai",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.004,
+          "output_price": 0.016,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 131072,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2948482.html"
+    },
+    {
+      "name": "通义千问3-Max",
+      "model_id": "qwen3-max",
+      "description": "通义千问3系列Max模型，相较preview版本在智能体编程与工具调用方向进行了专项升级。本次发布的正式版模型达到领域SOTA水平，适配场景更加复杂的智能体需求。",
+      "provider": "qwen",
+      "capabilities": {
+        "function_calling": true,
+        "web_search": true,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": true,
+        "structured_output": true
+      },
+      "pricing": [
+        {
+          "range": "输入<=32k",
+          "input_price": 0.006,
+          "output_price": 0.024,
+          "unit": "元/千Token",
+          "cache_price": 0.0012
+        },
+        {
+          "range": "32k<输入<=128k",
+          "input_price": 0.01,
+          "output_price": 0.04,
+          "unit": "元/千Token",
+          "cache_price": 0.002
+        },
+        {
+          "range": "128k<输入<=256k",
+          "input_price": 0.015,
+          "output_price": 0.06,
+          "unit": "元/千Token",
+          "cache_price": 0.003
+        }
+      ],
+      "context_window": 262144,
+      "max_output_tokens": 32768,
+      "doc_url": "https://help.aliyun.com/document_detail/2712576.html"
+    },
+    {
+      "name": "通义千问3-Max-Preview",
+      "model_id": "qwen3-max-preview",
+      "description": "通义千问3系列Max模型Preview版本，相较2.5系列整体通用能力有大幅度提升，中英文通用文本理解能力、复杂指令遵循能力、主观开放任务能力、多语言能力、工具调用能力均显著增强；模型知识幻觉更少。",
+      "provider": "qwen",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": true,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "输入<=32k",
+          "input_price": 0.006,
+          "output_price": 0.024,
+          "unit": "元/千Token",
+          "cache_price": 0.0012
+        },
+        {
+          "range": "32k<输入<=128k",
+          "input_price": 0.01,
+          "output_price": 0.04,
+          "unit": "元/千Token",
+          "cache_price": 0.002
+        },
+        {
+          "range": "128k<输入<=256k",
+          "input_price": 0.015,
+          "output_price": 0.06,
+          "unit": "元/千Token",
+          "cache_price": 0.003
+        }
+      ],
+      "context_window": 262144,
+      "max_output_tokens": 32768,
+      "doc_url": "https://help.aliyun.com/document_detail/2712576.html"
+    },
+    {
+      "name": "通义千问3-Max-2025-09-23",
+      "model_id": "qwen3-max-2025-09-23",
+      "description": "通义千问3系列Max模型，相较preview版本在智能体编程与工具调用方向进行了专项升级。本次发布的正式版模型达到领域SOTA水平，适配场景更加复杂的智能体需求。此版本为2025年9月23日快照。",
+      "provider": "qwen",
+      "capabilities": {
+        "function_calling": true,
+        "web_search": true,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": true
+      },
+      "pricing": [
+        {
+          "range": "输入<=32k",
+          "input_price": 0.006,
+          "output_price": 0.024,
+          "unit": "元/千Token"
+        },
+        {
+          "range": "32k<输入<=128k",
+          "input_price": 0.01,
+          "output_price": 0.04,
+          "unit": "元/千Token"
+        },
+        {
+          "range": "128k<输入<=256k",
+          "input_price": 0.015,
+          "output_price": 0.06,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 262144,
+      "max_output_tokens": 32768,
+      "doc_url": "https://help.aliyun.com/document_detail/2712576.html"
+    },
+    {
+      "name": "Deepseek-V3.2-Exp",
+      "model_id": "deepseek-v3.2-exp",
+      "description": "引入了DeepSeek Sparse Attention（一种稀疏注意力机制）的实验性质版本，针对长文本的训练和推理效率进行了探索性的优化和验证。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 2.0,
+          "output_price": 3.0,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 131072,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-V3.1",
+      "model_id": "deepseek-v3.1",
+      "description": "DeepSeek-V3.1为混合推理架构模型，同时支持思考模式与非思考模式，具备更高的推理效率和更强的Agent能力。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.004,
+          "output_price": 0.012,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 131072,
+      "max_output_tokens": 65536,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-V3",
+      "model_id": "deepseek-v3",
+      "description": "DeepSeek-V3 为自研 MoE 模型，671B 参数，激活 37B，在 14.8T token 上进行了预训练，在长文本、代码、数学、百科、中文 能力上表现优秀。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.002,
+          "output_price": 0.008,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 65536,
+      "max_output_tokens": 8192,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-R1",
+      "model_id": "deepseek-r1",
+      "description": "DeepSeek-R1 在后训练阶段大规模使用了强化学习技术，在仅有极少标注数据的情况下，极大提升了模型推理能力。在数学、代码、自然语言推理等任务上，性能较高，能力较强。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.004,
+          "output_price": 0.016,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 131072,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-R1-0528",
+      "model_id": "deepseek-r1-0528",
+      "description": "0528为R1模型的小版本升级，相较于旧版 R1，新版在复杂推理任务中的表现有了显著提升。在数学、编程与通用逻辑等多个基准测评中取得了优异成绩。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.004,
+          "output_price": 0.016,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 131072,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-R1-Distill-Qwen-32B",
+      "model_id": "deepseek-r1-distill-qwen-32b",
+      "description": "DeepSeek-R1-Distill-Qwen-32B是一个基于Qwen2.5-32B的蒸馏大型语言模型，使用了 DeepSeek R1 的输出。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.002,
+          "output_price": 0.006,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 32768,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-R1-Distill-Qwen-1.5B",
+      "model_id": "deepseek-r1-distill-qwen-1.5b",
+      "description": "DeepSeek-R1-Distill-Qwen-1.5B是一个基于Qwen2.5-Math-1.5B的蒸馏大型语言模型，使用了 DeepSeek R1 的输出。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [],
+      "context_window": 32768,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-R1-Distill-Qwen-14B",
+      "model_id": "deepseek-r1-distill-qwen-14b",
+      "description": "DeepSeek-R1-Distill-Qwen-14B是一个基于Qwen2.5-14B的蒸馏大型语言模型，使用了 DeepSeek R1 的输出。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.001,
+          "output_price": 0.003,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 32768,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "DeepSeek-R1-Distill-Qwen-7B",
+      "model_id": "deepseek-r1-distill-qwen-7b",
+      "description": "DeepSeek-R1-Distill-Qwen-7B是一个基于Qwen2.5-Math-7B的蒸馏大型语言模型，使用了 DeepSeek R1 的输出。",
+      "provider": "deepseek",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "统一价格",
+          "input_price": 0.0005,
+          "output_price": 0.001,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 32768,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2868565.html"
+    },
+    {
+      "name": "GLM-4.5",
+      "model_id": "glm-4.5",
+      "description": "GLM-4.5采用混合专家（MoE）架构，总参数量为3550 亿，激活参数320亿，在复杂推理、代码生成及智能体交互等通用能力上实现了能力融合与技术突破。",
+      "provider": "zhipu-ai",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "输入<=32k",
+          "input_price": 0.003,
+          "output_price": 0.014,
+          "unit": "元/千Token"
+        },
+        {
+          "range": "32k<输入<=128k",
+          "input_price": 0.004,
+          "output_price": 0.016,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 131072,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2974045.html"
+    },
+    {
+      "name": "GLM-4.5-Air",
+      "model_id": "glm-4.5-air",
+      "description": "GLM-4.5-Air采用混合专家（MoE）架构，总参数量为1060亿，激活参数120亿，相较GLM-4.5更紧凑、轻量，适用于对模型规模和资源消耗有一定限制的场景。",
+      "provider": "zhipu-ai",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": true,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "输入<=32k",
+          "input_price": 0.0008,
+          "output_price": 0.006,
+          "unit": "元/千Token"
+        },
+        {
+          "range": "32k<输入<=128k",
+          "input_price": 0.0012,
+          "output_price": 0.008,
+          "unit": "元/千Token"
+        }
+      ],
+      "context_window": 131072,
+      "max_output_tokens": 16384,
+      "doc_url": "https://help.aliyun.com/document_detail/2974045.html"
+    },
+    {
+      "name": "通义万相2.5-图生视频-Preview",
+      "model_id": "wan2.5-i2v-preview",
+      "description": "通义万相2.5-图生视频-Preview，全新升级技术架构，支持与画面同步的声音生成，支持10秒长视频生成，更强的指令遵循能力，运动能力、画面质感进一步提升。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": true,
+          "image": true,
+          "audio": true,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": true,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（480P）",
+          "input_price": 0.3,
+          "output_price": 0.3,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（720P）",
+          "input_price": 0.6,
+          "output_price": 0.6,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（1080P）",
+          "input_price": 1.0,
+          "output_price": 1.0,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2867393.html"
+    },
+    {
+      "name": "通义万相2.2-图生视频-Plus",
+      "model_id": "wan2.2-i2v-plus",
+      "description": "全新升级的通义万相2.2图生视频，视频品质更高。优化视频生成稳定性与成功率，更强大的指令遵循能力，稳定保持图片文字、人像和商品一致性，精准运镜控制。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（480P）",
+          "input_price": 0.14,
+          "output_price": 0.14,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（1080P）",
+          "input_price": 0.7,
+          "output_price": 0.7,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2867393.html"
+    },
+    {
+      "name": "通义万相2.2-首尾帧-Flash",
+      "model_id": "wan2.2-kf2v-flash",
+      "description": "全新升级的通义万相2.2-首尾帧生视频，生成速度更快。优化视频动态稳定性与成功率，更强大的指令遵循能力，两张图片生成丝滑过度视频。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（480P）",
+          "input_price": 0.1,
+          "output_price": 0.1,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（720P）",
+          "input_price": 0.2,
+          "output_price": 0.2,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（1080P）",
+          "input_price": 0.48,
+          "output_price": 0.48,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2880649.html"
+    },
+    {
+      "name": "通义万相2.2-数字人-Animate-图生动作",
+      "model_id": "wan2.2-animate-move",
+      "description": "wan2.2-animate-move图生动作是一款角色动画生成模型，用户只需上传一张角色照片和一段参考表演视频，即可将视频中的表情和动作迁移到图片角色上，生成高保真的动画视频。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": true
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（std）",
+          "input_price": 0.4,
+          "output_price": 0.4,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（pro）",
+          "input_price": 0.6,
+          "output_price": 0.6,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2981852.html"
+    },
+    {
+      "name": "通义万相2.2-数字人-Animate-视频换人",
+      "model_id": "wan2.2-animate-mix",
+      "description": "wan2.2-animate-mix视频换人是一款角色替换的模型产品，上传一张角色照片与一段表演视频，即可将原视频中的角色精准替换为照片中的角色，完整保留原始视频的场景、光照和色调等环境细节。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": true
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（std）",
+          "input_price": 0.6,
+          "output_price": 0.6,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（pro）",
+          "input_price": 0.9,
+          "output_price": 0.9,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2982219.html"
+    },
+    {
+      "name": "通义万相2.2-图生视频-Flash",
+      "model_id": "wan2.2-i2v-flash",
+      "description": "全新升级的通义万相2.2图生视频，生成速度更快。优化视频生成稳定性与成功率，更强大的指令遵循能力，稳定保持图片文字、人像和商品一致性，精准运镜控制。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（480P）",
+          "input_price": 0.1,
+          "output_price": 0.1,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（720P）",
+          "input_price": 0.2,
+          "output_price": 0.2,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2867393.html"
+    },
+    {
+      "name": "通义万相2.2-数字人-S2V",
+      "model_id": "wan2.2-s2v",
+      "description": "wan2.2-s2v 是一款视频生成模型，可基于人物图片和人声音频文件，生成高质量的人物说话/唱歌/表演动态视频。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（480P）",
+          "input_price": 0.5,
+          "output_price": 0.5,
+          "unit": "元/秒"
+        },
+        {
+          "range": "视频生成（720P）",
+          "input_price": 0.9,
+          "output_price": 0.9,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/zh/document_detail/2978215.html"
+    },
+    {
+      "name": "通义万相2.2-数字人-S2V-Detect",
+      "model_id": "wan2.2-s2v-detect",
+      "description": "wan2.2-s2v-detect 是 wan2.2-s2v 的辅助模型，用于确认输入的人物肖像图片是否符合 wan2.2-s2v 模型所需的人物肖像图片规范。wan2.2-s2v 模型基于 wan2.2-s2v-detect 检测通过的图片和人声音频文件进行视频生成。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": false
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "图片检测",
+          "input_price": 0.004,
+          "output_price": 0.004,
+          "unit": "元/张"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/zh/document_detail/2978214.html"
+    },
+    {
+      "name": "通义万相2.1-首尾帧-Plus",
+      "model_id": "wanx2.1-kf2v-plus",
+      "description": "通义万相2.1-首尾帧-Plus，两张图片生成丝滑过度视频。支持大幅度复杂运动、物理规律遵循、丰富艺术风格和影视级画面质感，指令遵循能力进一步提升，生成画面细节更丰富。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（std）",
+          "input_price": 0.7,
+          "output_price": 0.7,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2880649.html"
+    },
+    {
+      "name": "通义万相2.1-图生视频-Plus",
+      "model_id": "wanx2.1-i2v-plus",
+      "description": "通义万相2.1-图生视频-Plus，让图片变为动态视频。支持大幅度复杂运动、物理规律遵循、丰富艺术风格和影视级画面质感，指令遵循能力进一步提升，视频质量更高。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（std）",
+          "input_price": 0.7,
+          "output_price": 0.7,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2867393.html"
+    },
+    {
+      "name": "通义万相2.1-图生视频-Turbo",
+      "model_id": "wanx2.1-i2v-turbo",
+      "description": "通义万相2.1-图生视频-Turbo，让图片变为动态视频。支持大幅度复杂运动、物理规律遵循、丰富艺术风格和影视级画面质感，指令遵循能力进一步提升，生成速度更快。",
+      "provider": "wan",
+      "capabilities": {
+        "function_calling": false,
+        "web_search": false,
+        "input_modalities": {
+          "text": false,
+          "image": true,
+          "audio": false,
+          "video": false
+        },
+        "output_modalities": {
+          "text": false,
+          "image": false,
+          "audio": false,
+          "video": true
+        },
+        "cache": false,
+        "structured_output": false
+      },
+      "pricing": [
+        {
+          "range": "视频生成（std）",
+          "input_price": 0.24,
+          "output_price": 0.24,
+          "unit": "元/秒"
+        }
+      ],
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "doc_url": "https://help.aliyun.com/document_detail/2867393.html"
+    }
+  ]
+}

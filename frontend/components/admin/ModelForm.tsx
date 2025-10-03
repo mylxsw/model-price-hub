@@ -224,7 +224,7 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
         ...initialValues,
         model_capability: normalizeStringArray(initialValues.model_capability),
         license: normalizeStringArray(initialValues.license),
-        categories: normalizeStringArray((initialValues as Record<string, unknown>).categories),
+        categories: normalizeStringArray(((initialValues as unknown) as Record<string, unknown>).categories),
         price_data: priceData ?? (defaults.price_data as Record<string, unknown>),
         release_date: initialValues.release_date ? initialValues.release_date.slice(0, 10) : undefined
       });

@@ -25,6 +25,16 @@ interface ModelFilterPanelProps {
   onReset: () => void;
 }
 
+const emptyFilters: ModelFilterValues = {
+  search: "",
+  vendorName: "",
+  priceModel: "",
+  priceCurrency: "",
+  capability: "",
+  license: "",
+  category: ""
+};
+
 const priceModelOptions = [
   { label: "All pricing", value: "" },
   { label: "Per token", value: "token" },
@@ -36,12 +46,14 @@ const priceModelOptions = [
 
 export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanelProps) {
   const [localValues, setLocalValues] = useState(values);
+  const [pendingReset, setPendingReset] = useState(false);
   const { data: filterOptions, isLoading: optionsLoading } = useModelFilterOptions();
   const inputRef = useRef<HTMLInputElement>(null);
   const { close, registerFocusHandler } = useFilterPanelStore();
 
   useEffect(() => {
     setLocalValues(values);
+    setPendingReset(false);
   }, [values]);
 
   useEffect(() => {
@@ -52,9 +64,18 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
   }, [registerFocusHandler]);
 
   const updateField = <K extends keyof ModelFilterValues>(field: K, value: ModelFilterValues[K]) => {
-    const updated = { ...localValues, [field]: value };
-    setLocalValues(updated);
-    onChange(updated);
+    setLocalValues((current) => ({ ...current, [field]: value }));
+    setPendingReset(false);
+  };
+
+  const handleApply = () => {
+    if (pendingReset) {
+      onReset();
+    } else {
+      onChange(localValues);
+    }
+    setPendingReset(false);
+    close();
   };
 
   const vendorOptions = useMemo(
@@ -144,10 +165,17 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
         options={priceModelOptions}
       />
       <div className="mt-auto flex flex-col gap-3 sm:flex-row">
-        <Button variant="secondary" onClick={onReset} className="w-full sm:flex-1">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setLocalValues({ ...emptyFilters });
+            setPendingReset(true);
+          }}
+          className="w-full sm:flex-1"
+        >
           Reset filters
         </Button>
-        <Button onClick={close} className="w-full sm:flex-1">
+        <Button onClick={handleApply} className="w-full sm:flex-1">
           Apply
         </Button>
       </div>

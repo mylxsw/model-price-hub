@@ -8,12 +8,12 @@ import { ModelList } from "../../components/catalog/ModelList";
 import { useModels } from "../../lib/hooks/useModels";
 import { Select } from "../../components/ui/Select";
 import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
-import { useLayoutModeStore } from "../../lib/hooks/useLayoutMode";
 import { Pagination } from "../../components/ui/Pagination";
 import { MODEL_CATEGORIES } from "../../lib/constants";
 import { Button } from "../../components/ui/Button";
 import { CurrencySelector } from "../../components/currency/CurrencySelector";
 import { PricingUnitSelector } from "../../components/pricing/PricingUnitSelector";
+
 import {
   catalogSortOptions,
   createCatalogSearchParams,
@@ -26,6 +26,24 @@ import { CompareModelsModal } from "../../components/catalog/CompareModelsModal"
 
 const MAX_COMPARE_SELECTIONS = 5;
 
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
 export default function CatalogPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -35,16 +53,7 @@ export default function CatalogPage() {
   const [page, setPage] = useState<number>(1);
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
-  const { isOpen, close, setHasActiveFilters } = useFilterPanelStore();
-  const layoutMode = useLayoutModeStore((state) => state.mode);
-
-  const overlayWidthClasses = [
-    "mx-auto flex w-full",
-    layoutMode === "centered" ? "max-w-7xl" : "",
-    "justify-end px-4 sm:px-6"
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const { toggle, isOpen, close, setHasActiveFilters, hasActiveFilters } = useFilterPanelStore();
 
   const updateSearchParams = useCallback(
     (nextFilters: ModelFilterValues, nextSort: string, nextPage: number) => {
@@ -204,22 +213,18 @@ export default function CatalogPage() {
   return (
     <div className="relative space-y-8">
       {isOpen && (
-        <div className="fixed inset-0 z-40 flex items-start justify-end bg-slate-950/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
           <button
             type="button"
             aria-label="Close filters"
-            className="absolute inset-0 cursor-default"
+            className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
             onClick={close}
           />
           <div
-            className="relative z-50 mt-24 w-full pb-8 lg:mt-28"
+            className="relative z-50 w-full max-w-lg"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className={overlayWidthClasses}>
-              <div className="w-full max-w-md">
-                <ModelFilterPanel values={filters} onChange={handleFilterPanelChange} onReset={handleResetFilters} />
-              </div>
-            </div>
+            <ModelFilterPanel values={filters} onChange={handleFilterPanelChange} onReset={handleResetFilters} />
           </div>
         </div>
       )}
@@ -245,29 +250,6 @@ export default function CatalogPage() {
             );
           })}
         </div>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-1">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Search and filter foundation and fine-tuned models from global vendors.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
-            <span className="text-sm text-slate-500 dark:text-slate-400">{query.data?.total ?? 0} results</span>
-            <div className="flex flex-wrap items-center gap-3">
-              <CurrencySelector size="sm" />
-              <PricingUnitSelector size="sm" />
-              <Select
-                aria-label="Sort models"
-                value={sort}
-                onChange={(event) => handleSortChange(event.target.value)}
-                options={catalogSortOptions}
-              />
-              <Button type="button" variant="primary" size="sm" onClick={() => setIsCompareOpen(true)}>
-                Compare{selectedModelIds.length ? ` (${selectedModelIds.length})` : ""}
-              </Button>
-            </div>
-          </div>
-        </div>
         {query.isLoading ? (
           <div className="rounded-xl border border-slate-200 bg-white/90 p-10 text-center text-sm text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
             Loading models...
@@ -277,8 +259,38 @@ export default function CatalogPage() {
             Failed to load models. Please try again later.
           </div>
         ) : (
-          <ModelList
-            models={models}
+      <ModelList
+        models={models}
+        toolbarLeft={
+          <Button type="button" variant="primary" size="sm" onClick={() => setIsCompareOpen(true)}>
+            Compare{selectedModelIds.length ? ` (${selectedModelIds.length})` : ""}
+              </Button>
+            }
+            toolbarRight={
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <span className="text-sm text-slate-500 dark:text-slate-400">{query.data?.total ?? 0} results</span>
+                <CurrencySelector size="sm" />
+                <PricingUnitSelector size="sm" />
+                <Select
+                  aria-label="Sort models"
+                  value={sort}
+                  onChange={(event) => handleSortChange(event.target.value)}
+                  options={catalogSortOptions}
+                />
+                <Button
+                  variant={isOpen ? "primary" : hasActiveFilters ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={toggle}
+                  aria-label="Search and filter models"
+                  aria-pressed={isOpen}
+                  className="px-2"
+                >
+                  <SearchIcon
+                    className={["h-4 w-4", isOpen ? "text-white" : hasActiveFilters ? "text-primary" : ""].filter(Boolean).join(" ")}
+                  />
+                </Button>
+              </div>
+            }
             onSelectCapability={handleCapabilitySelect}
             onSelectLicense={handleLicenseSelect}
           />
@@ -297,6 +309,7 @@ export default function CatalogPage() {
         onToggleModel={toggleModelSelection}
         onConfirm={handleCompareConfirm}
         maxSelections={MAX_COMPARE_SELECTIONS}
+        defaultFilters={{ category: filters.category }}
       />
     </div>
   );

@@ -216,7 +216,7 @@ const parseTierPricing = (priceData: unknown): TierPricing[] => {
     tierEntries = Object.entries(tiersValue).map(([name, tier], index) => {
       const record = tier && typeof tier === "object" ? (tier as Record<string, unknown>) : { price_per_unit: tier };
       return {
-        name: record.name && typeof record.name === "string" ? (record.name as string) : name || `Tier ${index + 1}`,
+        name: typeof (record as Record<string, unknown>)?.name === "string" ? ((record as Record<string, unknown>).name as string) : name || `Tier ${index + 1}`,
         data: record
       };
     });
@@ -364,30 +364,36 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
         const currency = tokenPricing.currency || price_currency;
         const convertedUnit = formatPricingUnit();
         const perSuffix = `/${convertedUnit}`;
+
+        interface TokenEntryDisplay {
+          label: string;
+          priceText: string;
+          suffix: string;
+        }
+
+        const buildEntry = (label: string, amount?: number): TokenEntryDisplay | null => {
+          if (amount === undefined) {
+            return null;
+          }
+          const converted = convertPriceByUnit(amount, tokenPricing.per);
+          if (converted === null) {
+            return null;
+          }
+          return {
+            label,
+            priceText: formatCurrency(converted, currency),
+            suffix: perSuffix
+          };
+        };
+
         const entries = [
-          tokenPricing.input !== undefined
-            ? {
-                label: "Input",
-                value: `${formatCurrency(convertPriceByUnit(tokenPricing.input, tokenPricing.per), currency)}${perSuffix}`
-              }
-            : null,
-          tokenPricing.output !== undefined
-            ? {
-                label: "Output",
-                value: `${formatCurrency(convertPriceByUnit(tokenPricing.output, tokenPricing.per), currency)}${perSuffix}`
-              }
-            : null,
-          tokenPricing.cached !== undefined
-            ? {
-                label: "Cached",
-                value: `${formatCurrency(convertPriceByUnit(tokenPricing.cached, tokenPricing.per), currency)}${perSuffix}`
-              }
-            : null
-        ].filter(Boolean) as Array<{ label: string; value: string }>;
+          buildEntry("Input", tokenPricing.input),
+          buildEntry("Output", tokenPricing.output),
+          buildEntry("Cached", tokenPricing.cached)
+        ].filter((entry): entry is TokenEntryDisplay => Boolean(entry));
 
         if (entries.length > 0) {
           const isStacked = layout === "stacked";
-          const primaryEntry = entries[0];
 
           if (isStacked) {
             return (
@@ -397,7 +403,6 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                     <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       Token pricing
                     </span>
-                    {primaryEntry && <span className="text-sm font-semibold text-primary">{primaryEntry.value}</span>}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {entries.map((entry) => (
@@ -406,7 +411,10 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                         className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200"
                       >
                         <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{entry.label}</span>
-                        {entry.value}
+                        <span>
+                          <span className="font-semibold text-primary">{entry.priceText}</span>
+                          <span className="ml-1 text-slate-500 dark:text-slate-400">{entry.suffix}</span>
+                        </span>
                       </span>
                     ))}
                   </div>
@@ -415,20 +423,23 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
             );
           }
 
-          return (
-            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-              {entries.map((entry) => (
-                <span
-                  key={entry.label}
-                  className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{entry.label}</span>
-                  {entry.value}
-                </span>
-              ))}
-            </div>
-          );
-        }
+            return (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                {entries.map((entry) => (
+                  <span
+                    key={entry.label}
+                    className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{entry.label}</span>
+                    <span>
+                      <span className="font-semibold text-primary">{entry.priceText}</span>
+                      <span className="ml-1 text-slate-500 dark:text-slate-400">{entry.suffix}</span>
+                    </span>
+                  </span>
+                ))}
+              </div>
+            );
+          }
       }
       return <span className="text-xs text-slate-500 dark:text-slate-400">Token pricing unavailable</span>;
     }
@@ -486,32 +497,42 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
   }
 
   if (normalizedModel === "tiered" || normalizedModel === "subscription") {
-    const buildTokenEntries = (tier: TierPricing): Array<{ label: string; value: string }> => {
+    interface TierEntryDisplay {
+      label: string;
+      priceText: string;
+      suffix: string;
+    }
+
+    const buildTokenEntries = (tier: TierPricing): TierEntryDisplay[] => {
       if (tier.isFree) {
-        return [{ label: "Status", value: "Free" }];
+        return [{ label: "Status", priceText: "Free", suffix: "" }];
       }
       if (tier.billing !== "token" || !tier.tokenRates) return [];
       const convertedUnit = formatPricingUnit();
+      const suffix = `/${convertedUnit}`;
       const entries = [
         tier.tokenRates.input !== null && tier.tokenRates.input !== undefined
           ? {
               label: "Input",
-              value: `${formatCurrency(convertTierPriceByUnit(tier.tokenRates.input, tier.unit), price_currency)} / ${convertedUnit}`
+              priceText: formatCurrency(convertTierPriceByUnit(tier.tokenRates.input, tier.unit), price_currency),
+              suffix
             }
           : null,
         tier.tokenRates.cached !== null && tier.tokenRates.cached !== undefined
           ? {
               label: "Cached",
-              value: `${formatCurrency(convertTierPriceByUnit(tier.tokenRates.cached, tier.unit), price_currency)} / ${convertedUnit}`
+              priceText: formatCurrency(convertTierPriceByUnit(tier.tokenRates.cached, tier.unit), price_currency),
+              suffix
             }
           : null,
         tier.tokenRates.output !== null && tier.tokenRates.output !== undefined
           ? {
               label: "Output",
-              value: `${formatCurrency(convertTierPriceByUnit(tier.tokenRates.output, tier.unit), price_currency)} / ${convertedUnit}`
+              priceText: formatCurrency(convertTierPriceByUnit(tier.tokenRates.output, tier.unit), price_currency),
+              suffix
             }
           : null
-      ].filter(Boolean) as Array<{ label: string; value: string }>;
+      ].filter((entry): entry is TierEntryDisplay => Boolean(entry));
       return entries;
     };
 
@@ -546,11 +567,10 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                 key={`${tier.name}-${index}`}
                 className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {tier.name}
                   </span>
-                  <span className="text-sm font-semibold text-primary">{buildTierSummary(tier)}</span>
                 </div>
                 <div className="mt-2 text-xs text-slate-600 dark:text-slate-300">
                   {tier.billing === "token" ? (
@@ -568,7 +588,12 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                             <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               {entry.label}
                             </span>
-                            {entry.value}
+                            <span>
+                              <span className="font-semibold text-primary">{entry.priceText}</span>
+                              {entry.suffix && (
+                                <span className="ml-1 text-slate-500 dark:text-slate-400">{entry.suffix}</span>
+                              )}
+                            </span>
                           </span>
                         ))}
                       </div>
@@ -639,7 +664,12 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                     <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                       {entry.label}
                     </span>
-                    {entry.value}
+                    <span>
+                      <span className="font-semibold text-primary">{entry.priceText}</span>
+                      {entry.suffix && (
+                        <span className="ml-1 text-slate-500 dark:text-slate-400">{entry.suffix}</span>
+                      )}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -698,7 +728,12 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
                             <span className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
                               {entry.label}
                             </span>
-                            {entry.value}
+                            <span>
+                              <span className="font-semibold text-primary">{entry.priceText}</span>
+                              {entry.suffix && (
+                                <span className="ml-1 text-slate-500 dark:text-slate-400">{entry.suffix}</span>
+                              )}
+                            </span>
                           </span>
                         ))}
                         {tier.tokenRates.input === null &&
