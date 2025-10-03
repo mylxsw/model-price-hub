@@ -8,7 +8,9 @@ import { Input } from "../ui/Input";
 import { Select } from "../ui/Select";
 import { TagInput } from "../ui/TagInput";
 import { useAdminVendors } from "../../lib/hooks/useVendors";
+import { useModelFilterOptions } from "../../lib/hooks/useModels";
 import { PriceEditor } from "./PriceEditor";
+import { ImageUploadButton } from "./ImageUploadButton";
 
 export interface ModelInput {
   id?: number;
@@ -59,6 +61,7 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
   const [values, setValues] = useState<ModelInput>(initialValues ?? createDefaultValues());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const filterOptions = useModelFilterOptions();
 
   useEffect(() => {
     const defaults = createDefaultValues();
@@ -81,6 +84,84 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
         priceData = defaults.price_data as Record<string, unknown>;
       }
 
+      const normalizeTieredData = (input: unknown): Record<string, unknown> => {
+        const ensureRecord = (value: unknown) => (value && typeof value === "object" ? (value as Record<string, unknown>) : {});
+        const raw = ensureRecord(input);
+        const tiersValue = raw.tiers;
+        let tierEntries: Array<Record<string, unknown>> = [];
+        if (Array.isArray(tiersValue)) {
+          tierEntries = tiersValue.filter((tier): tier is Record<string, unknown> => tier !== null && typeof tier === "object");
+        } else if (tiersValue && typeof tiersValue === "object") {
+          tierEntries = Object.entries(tiersValue).map(([name, tier]) => {
+            if (tier && typeof tier === "object") {
+              return { name, ...(tier as Record<string, unknown>) };
+            }
+            return { name, price_per_unit: tier };
+          });
+        }
+
+        const normalized = tierEntries.map((tier, index) => {
+          const name = typeof tier.name === "string" && tier.name.trim() ? tier.name : `Tier ${index + 1}`;
+          const billingRaw = typeof tier.billing === "string" ? tier.billing.toLowerCase() : undefined;
+          const unitRaw = typeof tier.unit === "string" ? tier.unit : undefined;
+          const inferredBilling = billingRaw === "token" || billingRaw === "requests"
+            ? billingRaw
+            : unitRaw && unitRaw.toLowerCase().includes("token")
+              ? "token"
+              : "requests";
+          const unit = inferredBilling === "token"
+            ? (unitRaw && unitRaw.toLowerCase().includes("1m") ? "1M Tokens" : "1K Tokens")
+            : "Requests";
+
+          const parseNumeric = (value: unknown): number | null => {
+            if (typeof value === "number" && Number.isFinite(value)) return value;
+            if (typeof value === "string" && value.trim()) {
+              const parsed = Number(value);
+              return Number.isFinite(parsed) ? parsed : null;
+            }
+            return null;
+          };
+
+          const priceValue = tier.price_per_unit ?? tier.price;
+          const inputPrice = parseNumeric(tier.input_price_per_unit ?? tier.inputPrice ?? priceValue);
+          const cachedPrice = parseNumeric(tier.cached_price_per_unit ?? tier.cachedPrice ?? null);
+          const outputPrice = parseNumeric(tier.output_price_per_unit ?? tier.outputPrice ?? priceValue);
+          const requestPrice = parseNumeric(priceValue);
+
+          return inferredBilling === "token"
+            ? {
+                name,
+                billing: "token",
+                input_price_per_unit: inputPrice,
+                cached_price_per_unit: cachedPrice,
+                output_price_per_unit: outputPrice,
+                unit
+              }
+            : {
+                name,
+                billing: "requests",
+                price_per_unit: requestPrice,
+                unit
+              };
+        });
+
+        if (normalized.length) {
+          return { tiers: normalized };
+        }
+        return {
+          tiers: [
+            {
+              name: "Tier 1",
+              billing: "token",
+              input_price_per_unit: null,
+              cached_price_per_unit: null,
+              output_price_per_unit: null,
+              unit: "1K Tokens"
+            }
+          ]
+        };
+      };
+
       if (initialValues.price_model === "token") {
         const base =
           priceData && typeof priceData === "object" && "base" in priceData
@@ -98,6 +179,10 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
             input_token_cached_1m: baseRecord.input_token_cached_1m ?? null
           }
         };
+      }
+
+      if (initialValues.price_model === "tiered") {
+        priceData = normalizeTieredData(priceData);
       }
       const expandStringList = (input: unknown): string[] => {
         if (!input) return [];
@@ -179,7 +264,18 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
           nextPriceData = { base: { price_per_call: null } };
           break;
         case "tiered":
-          nextPriceData = { tiers: [{ name: "Tier 1", price_per_unit: null, unit: "requests" }] };
+          nextPriceData = {
+            tiers: [
+              {
+                name: "Tier 1",
+                billing: "token",
+                input_price_per_unit: null,
+                cached_price_per_unit: null,
+                output_price_per_unit: null,
+                unit: "1K Tokens"
+              }
+            ]
+          };
           break;
         default:
           nextPriceData = null;
@@ -210,11 +306,24 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
           value={values.description ?? ""}
           onChange={(event) => handleChange("description", event.target.value)}
         />
-        <Input
-          label="Model image URL"
-          value={values.model_image ?? ""}
-          onChange={(event) => handleChange("model_image", event.target.value)}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="sm:flex-1">
+            <Input
+              label="Model image URL"
+              value={values.model_image ?? ""}
+              onChange={(event) => handleChange("model_image", event.target.value)}
+            />
+          </div>
+          <ImageUploadButton
+            label="Upload"
+            className="w-full sm:w-auto"
+            onUploaded={(url) => {
+              setValues((current) => ({ ...current, model_image: url }));
+              setError(null);
+            }}
+            onError={(message) => setError(message)}
+          />
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             label="Max context tokens"
@@ -229,7 +338,14 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
             onChange={(event) => handleChange("max_output_tokens", event.target.value)}
           />
         </div>
-        <TagInput label="Capabilities" values={values.model_capability} onChange={(list) => handleChange("model_capability", list)} />
+        <TagInput
+          label="Capabilities"
+          values={values.model_capability}
+          onChange={(list) => handleChange("model_capability", list)}
+          placeholder="Add capability"
+          suggestions={filterOptions.data?.capabilities ?? []}
+          suggestionLabel="Existing capabilities"
+        />
         <Input
           label="Model URL"
           value={values.model_url ?? ""}
@@ -267,7 +383,14 @@ export function ModelForm({ initialValues, onSubmit, submitLabel = "Save model" 
           />
         </div>
         <PriceEditor priceModel={values.price_model} value={values.price_data} onChange={(next) => handleChange("price_data", next ?? null)} />
-        <TagInput label="Licenses" values={values.license} onChange={(list) => handleChange("license", list)} />
+        <TagInput
+          label="Licenses"
+          values={values.license}
+          onChange={(list) => handleChange("license", list)}
+          placeholder="Add license"
+          suggestions={filterOptions.data?.licenses ?? []}
+          suggestionLabel="Existing licenses"
+        />
         <Select
           label="Status"
           value={values.status ?? "enabled"}

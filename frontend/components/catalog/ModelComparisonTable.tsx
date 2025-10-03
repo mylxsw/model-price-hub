@@ -74,6 +74,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
                       price_data: model.priceData
                     }}
                     variant="compact"
+                    layout="stacked"
                   />
                 </td>
               ))}

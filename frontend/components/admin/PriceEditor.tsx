@@ -4,6 +4,7 @@ import { Fragment } from "react";
 
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
+import { Select } from "../ui/Select";
 
 type PriceData = Record<string, unknown> | null | undefined;
 
@@ -96,66 +97,209 @@ function renderCallPricing(value: PriceData, onChange: (nextValue: Record<string
   );
 }
 
-function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<string, unknown> | null) => void) {
-  const tiers = Array.isArray(ensureRecord(value).tiers) ? (ensureRecord(value).tiers as Record<string, unknown>[]) : [];
+const billingOptions = [
+  { label: "Tokens", value: "token" },
+  { label: "Requests", value: "requests" }
+];
 
-  const updateTier = (index: number, field: string, raw: string) => {
-    const nextTiers = tiers.map((tier, tierIndex) => {
-      if (tierIndex !== index) return tier;
-      const nextValue = field === "price_per_unit" ? toNumberOrNull(raw) : raw;
-      return { ...tier, [field]: nextValue };
+const tokenUnitOptions = [
+  { label: "1K Tokens", value: "1K Tokens" },
+  { label: "1M Tokens", value: "1M Tokens" }
+];
+
+const requestUnitOptions = [{ label: "Requests", value: "Requests" }];
+
+function normalizeTierList(value: PriceData): Record<string, unknown>[] {
+  const record = ensureRecord(value);
+  const tiers = record.tiers;
+  if (Array.isArray(tiers)) {
+    return tiers.filter((tier): tier is Record<string, unknown> => typeof tier === "object" && tier !== null);
+  }
+  if (tiers && typeof tiers === "object") {
+    return Object.entries(tiers).map(([name, tier]) => {
+      if (tier && typeof tier === "object") {
+        return { name, ...(tier as Record<string, unknown>) };
+      }
+      return { name, price_per_unit: tier };
     });
-    onChange({ tiers: nextTiers });
+  }
+  return [];
+}
+
+function renderTieredPricing(value: PriceData, onChange: (nextValue: Record<string, unknown> | null) => void) {
+  const tiers = normalizeTierList(value);
+
+  const updateTiers = (next: Record<string, unknown>[]) => {
+    onChange(next.length ? { tiers: next } : null);
+  };
+
+  const updateTier = (index: number, updater: (tier: Record<string, unknown>) => Record<string, unknown>) => {
+    const nextTiers = tiers.map((tier, tierIndex) => (tierIndex === index ? updater(tier) : tier));
+    updateTiers(nextTiers);
+  };
+
+  const asNumber = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
   };
 
   const addTier = () => {
-    const nextTiers = [...tiers, { name: `Tier ${tiers.length + 1}`, price_per_unit: null, unit: "requests" }];
-    onChange({ tiers: nextTiers });
+    const nextTier = {
+      name: `Tier ${tiers.length + 1}`,
+      billing: "token",
+      input_price_per_unit: null,
+      cached_price_per_unit: null,
+      output_price_per_unit: null,
+      unit: "1K Tokens"
+    };
+    updateTiers([...tiers, nextTier]);
   };
 
   const removeTier = (index: number) => {
-    const nextTiers = tiers.filter((_, tierIndex) => tierIndex !== index);
-    onChange(nextTiers.length ? { tiers: nextTiers } : null);
+    updateTiers(tiers.filter((_, tierIndex) => tierIndex !== index));
   };
 
   return (
     <div className="space-y-4">
-      {tiers.map((tier, index) => (
-        <div
-          key={index}
-          className="rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60"
-        >
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
-            <Input
-              label="Tier name"
-              value={(tier.name as string) ?? ""}
-              onChange={(event) => updateTier(index, "name", event.target.value)}
-            />
-            <Input
-              label="Price per unit"
-              type="number"
-              min={0}
-              step="0.0001"
-              value={(tier.price_per_unit as number | null) ?? ""}
-              onChange={(event) => updateTier(index, "price_per_unit", event.target.value)}
-            />
-            <Input
-              label="Unit"
-              value={(tier.unit as string) ?? "requests"}
-              onChange={(event) => updateTier(index, "unit", event.target.value)}
-            />
-          </div>
-          <Button
-            type="button"
-            variant="danger"
-            size="sm"
-            className="mt-3"
-            onClick={() => removeTier(index)}
+      {tiers.map((tier, index) => {
+        const billingRaw = typeof tier.billing === "string" ? tier.billing : "token";
+        const billing = billingRaw === "requests" ? "requests" : "token";
+        const unitOptions = billing === "token" ? tokenUnitOptions : requestUnitOptions;
+        const unitRaw = typeof tier.unit === "string" ? tier.unit : unitOptions[0]?.value;
+        const tokenPrices = {
+          input: asNumber(tier.input_price_per_unit),
+          cached: asNumber(tier.cached_price_per_unit),
+          output: asNumber(tier.output_price_per_unit)
+        };
+        const requestPrice = asNumber(tier.price_per_unit);
+        return (
+          <div
+            key={index}
+            className="rounded-lg border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60"
           >
-            Remove tier
-          </Button>
-        </div>
-      ))}
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Input
+                  label="Tier name"
+                  value={(tier.name as string) ?? ""}
+                  onChange={(event) => updateTier(index, (current) => ({ ...current, name: event.target.value }))}
+                />
+                <Select
+                  label="Billing"
+                  value={billing}
+                  onChange={(event) => {
+                    const nextBilling = event.target.value === "requests" ? "requests" : "token";
+                    updateTier(index, (current) => ({
+                      ...current,
+                      billing: nextBilling,
+                      unit: nextBilling === "token" ? "1K Tokens" : "Requests",
+                      price_per_unit:
+                        nextBilling === "requests"
+                          ? current.price_per_unit ?? current.input_price_per_unit ?? current.output_price_per_unit ?? current.cached_price_per_unit ?? null
+                          : null,
+                      input_price_per_unit:
+                        nextBilling === "token"
+                          ? current.input_price_per_unit ?? current.price_per_unit ?? null
+                          : null,
+                      cached_price_per_unit:
+                        nextBilling === "token" ? current.cached_price_per_unit ?? null : null,
+                      output_price_per_unit:
+                        nextBilling === "token"
+                          ? current.output_price_per_unit ?? current.price_per_unit ?? null
+                          : null
+                    }));
+                  }}
+                  options={billingOptions}
+                />
+                <Select
+                  label="Unit"
+                  value={unitOptions.some((option) => option.value === unitRaw) ? unitRaw : unitOptions[0]?.value}
+                  onChange={(event) =>
+                    updateTier(index, (current) => ({
+                      ...current,
+                      unit: event.target.value
+                    }))
+                  }
+                  options={unitOptions}
+                />
+              </div>
+
+              {billing === "token" ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Input
+                    label="Input tokens price"
+                    type="number"
+                    min={0}
+                    step="0.0001"
+                    value={tokenPrices.input ?? ""}
+                    onChange={(event) =>
+                      updateTier(index, (current) => ({
+                        ...current,
+                        input_price_per_unit: toNumberOrNull(event.target.value)
+                      }))
+                    }
+                  />
+                  <Input
+                    label="Cached tokens price"
+                    type="number"
+                    min={0}
+                    step="0.0001"
+                    value={tokenPrices.cached ?? ""}
+                    onChange={(event) =>
+                      updateTier(index, (current) => ({
+                        ...current,
+                        cached_price_per_unit: toNumberOrNull(event.target.value)
+                      }))
+                    }
+                  />
+                  <Input
+                    label="Output tokens price"
+                    type="number"
+                    min={0}
+                    step="0.0001"
+                    value={tokenPrices.output ?? ""}
+                    onChange={(event) =>
+                      updateTier(index, (current) => ({
+                        ...current,
+                        output_price_per_unit: toNumberOrNull(event.target.value)
+                      }))
+                    }
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Input
+                    label="Price per unit"
+                    type="number"
+                    min={0}
+                    step="0.0001"
+                    value={requestPrice ?? ""}
+                    onChange={(event) =>
+                      updateTier(index, (current) => ({
+                        ...current,
+                        price_per_unit: toNumberOrNull(event.target.value)
+                      }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              className="mt-3"
+              onClick={() => removeTier(index)}
+            >
+              Remove tier
+            </Button>
+          </div>
+        );
+      })}
       <Button type="button" variant="secondary" size="sm" onClick={addTier}>
         Add tier
       </Button>

@@ -25,7 +25,7 @@ export default function EditVendorPage() {
       id: data.id,
       name: data.name,
       description: data.description,
-      vendor_image: data.vendor_image,
+      vendor_image: data.vendor_image ?? data.vendorImage ?? "",
       url: data.url,
       api_url: data.api_url,
       note: data.note,

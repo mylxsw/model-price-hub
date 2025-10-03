@@ -111,9 +111,23 @@ class ModelService:
             if isinstance(tiers, list) and tiers:
                 first = tiers[0]
                 if isinstance(first, dict):
-                    price = first.get("price_per_unit")
-                    if isinstance(price, (int, float)):
-                        return float(price)
+                    def _as_float(value):
+                        if isinstance(value, (int, float)):
+                            return float(value)
+                        if isinstance(value, str):
+                            try:
+                                return float(value)
+                            except (TypeError, ValueError):
+                                return None
+                        return None
+
+                    price = _as_float(first.get("price_per_unit"))
+                    if price is not None:
+                        return price
+                    for key in ("input_price_per_unit", "cached_price_per_unit", "output_price_per_unit"):
+                        price = _as_float(first.get(key))
+                        if price is not None:
+                            return price
         return None
 
     def list_models(

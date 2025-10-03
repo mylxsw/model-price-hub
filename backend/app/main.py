@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.routers import admin_auth, admin_models, admin_vendors, public
+from .api.routers import admin_auth, admin_models, admin_vendors, public, uploads
 from .core.config import get_settings
 from .core.database import init_db
 from .core.logging import configure_logging
@@ -24,6 +24,7 @@ app.include_router(admin_auth.router, prefix="/api")
 app.include_router(admin_vendors.router, prefix="/api")
 app.include_router(admin_models.router, prefix="/api")
 app.include_router(public.router, prefix="/api")
+app.include_router(uploads.router, prefix="/api")
 
 
 @app.get("/api/health")

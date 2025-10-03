@@ -6,6 +6,7 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Select } from "../ui/Select";
+import { ImageUploadButton } from "./ImageUploadButton";
 
 export interface VendorInput {
   id?: number;
@@ -73,11 +74,24 @@ export function VendorForm({ initialValues, onSubmit, submitLabel = "Save vendor
           value={values.description ?? ""}
           onChange={(event) => handleChange("description", event.target.value)}
         />
-        <Input
-          label="Vendor image URL"
-          value={values.vendor_image ?? ""}
-          onChange={(event) => handleChange("vendor_image", event.target.value)}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="sm:flex-1">
+            <Input
+              label="Vendor image URL"
+              value={values.vendor_image ?? ""}
+              onChange={(event) => handleChange("vendor_image", event.target.value)}
+            />
+          </div>
+          <ImageUploadButton
+            label="Upload"
+            className="w-full sm:w-auto"
+            onUploaded={(url) => {
+              setValues((current) => ({ ...current, vendor_image: url }));
+              setError(null);
+            }}
+            onError={(message) => setError(message)}
+          />
+        </div>
         <Input label="Website" value={values.url ?? ""} onChange={(event) => handleChange("url", event.target.value)} />
         <Input
           label="API URL"

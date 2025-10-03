@@ -30,7 +30,7 @@ export function ThemeToggle() {
       size="sm"
       aria-label={label}
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="min-w-[2.5rem]"
+      className="px-2 text-base"
     >
       {isDark ? "🌙" : "☀️"}
     </Button>

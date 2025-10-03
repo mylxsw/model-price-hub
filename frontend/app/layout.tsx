@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
 import { Providers } from "../components/layout/Providers";
+import { MainContent } from "../components/layout/MainContent";
 
 export const metadata: Metadata = {
   title: "Model Price Hub",
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-screen flex-col bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
         <Providers>
           <Header />
-          <main className="mx-auto flex-1 w-full max-w-7xl px-6 py-8 lg:px-10">{children}</main>
+          <MainContent>{children}</MainContent>
           <Footer />
         </Providers>
       </body>

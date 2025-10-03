@@ -17,6 +17,17 @@ class Settings(BaseSettings):
 
     cors_origins: List[str] = Field(default_factory=lambda: ["*"])
 
+    s3_bucket: Optional[str] = Field(default=None, env="S3_BUCKET")
+    s3_region: Optional[str] = Field(default=None, env="S3_REGION")
+    s3_endpoint: Optional[str] = Field(default=None, env="S3_ENDPOINT")
+    s3_access_key: Optional[str] = Field(default=None, env="S3_ACCESS_KEY")
+    s3_secret_key: Optional[str] = Field(default=None, env="S3_SECRET_KEY")
+    s3_use_path_style: bool = Field(default=False, env="S3_USE_PATH_STYLE")
+    s3_public_base_url: Optional[str] = Field(default=None, env="S3_PUBLIC_BASE_URL")
+    s3_prefix: Optional[str] = Field(default=None, env="S3_KEY_PREFIX")
+    s3_presign_expire_seconds: int = Field(default=300, env="S3_PRESIGN_EXPIRE_SECONDS")
+    s3_signature_version: str = Field(default="s3v4", env="S3_SIGNATURE_VERSION")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
@@ -26,6 +37,20 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @validator("s3_prefix", pre=True)
+    def normalize_prefix(cls, value: Optional[str]):  # type: ignore[override]
+        if not value:
+            return None
+        trimmed = value.strip().strip("/")
+        return f"{trimmed}/" if trimmed else None
+
+    @validator("s3_public_base_url", pre=True)
+    def normalize_public_base(cls, value: Optional[str]):  # type: ignore[override]
+        if not value:
+            return None
+        trimmed = value.strip()
+        return trimmed.rstrip("/") or None
 
 
 @lru_cache

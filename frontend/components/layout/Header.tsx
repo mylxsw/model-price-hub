@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { useAuthStore } from "../../lib/hooks/useAuth";
 import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
+import { useLayoutModeStore } from "../../lib/hooks/useLayoutMode";
 import { Button } from "../ui/Button";
 
 const navItems: Array<{ href: string; label: string }> = [];
@@ -31,12 +32,21 @@ export function Header() {
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAuthStore();
   const { toggle, isOpen } = useFilterPanelStore();
+  const layoutMode = useLayoutModeStore((state) => state.mode);
+  const containerClasses = [
+    "mx-auto flex w-full",
+    layoutMode === "centered" ? "max-w-7xl" : "",
+    "items-center justify-between px-6 py-4"
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const isAdminRoute = pathname?.startsWith("/admin");
+  const showFilterButton = pathname === "/catalog";
 
   return (
     <header className="border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
+      <div className={containerClasses}>
         <Link href="/" className="text-xl font-semibold text-primary">
           Model Price Hub
         </Link>
@@ -58,17 +68,18 @@ export function Header() {
           </nav>
         )}
         <div className="flex items-center gap-2">
-          <Button
-            variant={isOpen ? "primary" : "ghost"}
-            size="sm"
-            onClick={toggle}
-            aria-label="Search and filter models"
-            aria-pressed={isOpen}
-            className="gap-2"
-          >
-            <SearchIcon className="h-4 w-4" />
-            <span className="hidden sm:inline">Filters</span>
-          </Button>
+          {showFilterButton && (
+            <Button
+              variant={isOpen ? "primary" : "ghost"}
+              size="sm"
+              onClick={toggle}
+              aria-label="Search and filter models"
+              aria-pressed={isOpen}
+              className="px-2"
+            >
+              <SearchIcon className="h-4 w-4" />
+            </Button>
+          )}
           {isAuthenticated && isAdminRoute && (
             <Button variant="secondary" size="sm" onClick={logout}>
               Logout

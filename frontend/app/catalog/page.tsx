@@ -8,6 +8,7 @@ import { useModels } from "../../lib/hooks/useModels";
 import { Select } from "../../components/ui/Select";
 import { useFilterPanelStore } from "../../lib/hooks/useFilterPanel";
 import { ModelComparisonTable } from "../../components/catalog/ModelComparisonTable";
+import { useLayoutModeStore } from "../../lib/hooks/useLayoutMode";
 
 const defaultFilters: ModelFilterValues = {
   search: "",
@@ -33,6 +34,14 @@ export default function CatalogPage() {
   const [sort, setSort] = useState<string>(sortOptions[0]?.value ?? "release_desc");
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   const { isOpen, close } = useFilterPanelStore();
+  const layoutMode = useLayoutModeStore((state) => state.mode);
+  const overlayWidthClasses = [
+    "mx-auto flex w-full",
+    layoutMode === "centered" ? "max-w-7xl" : "",
+    "justify-end px-4 sm:px-6"
+  ]
+    .filter(Boolean)
+    .join(" ");
   const query = useModels({
     search: filters.search,
     vendorName: filters.vendorName,
@@ -70,25 +79,28 @@ export default function CatalogPage() {
             onClick={close}
           />
           <div
-            className="relative z-50 mt-24 w-full max-w-md px-4 pb-8 sm:px-6 lg:mt-28"
+            className="relative z-50 mt-24 w-full pb-8 lg:mt-28"
             onClick={(event) => event.stopPropagation()}
           >
-            <ModelFilterPanel
-              values={filters}
-              onChange={setFilters}
-              onReset={() => {
-                setFilters(defaultFilters);
-                setSort(sortOptions[0]?.value ?? "release_desc");
-              }}
-            />
+            <div className={overlayWidthClasses}>
+              <div className="w-full max-w-md">
+                <ModelFilterPanel
+                  values={filters}
+                  onChange={setFilters}
+                  onReset={() => {
+                    setFilters(defaultFilters);
+                    setSort(sortOptions[0]?.value ?? "release_desc");
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Model catalog</h1>
+        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-1">
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Search and filter foundation and fine-tuned models from global vendors.
             </p>

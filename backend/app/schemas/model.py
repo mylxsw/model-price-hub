@@ -64,6 +64,7 @@ class ModelUpdate(BaseModel):
 class VendorSummary(BaseModel):
     id: int
     name: str
+    vendor_image: Optional[str] = None
 
     class Config:
         orm_mode = True

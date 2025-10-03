@@ -7,13 +7,41 @@ import { Card } from "../../../../components/ui/Card";
 import { Table } from "../../../../components/ui/Table";
 import { Button } from "../../../../components/ui/Button";
 import { Badge } from "../../../../components/ui/Badge";
+import { Input } from "../../../../components/ui/Input";
+import { Select } from "../../../../components/ui/Select";
+import { PriceDisplay } from "../../../../components/catalog/PriceDisplay";
+import { ModelFilterValues } from "../../../../components/catalog/ModelFilterPanel";
 import { ApiClient } from "../../../../lib/apiClient";
-import { useAdminModels } from "../../../../lib/hooks/useModels";
+import { useAdminModels, useModelFilterOptions } from "../../../../lib/hooks/useModels";
 import { useAuthStore } from "../../../../lib/hooks/useAuth";
 
 const client = new ApiClient({
   getToken: () => useAuthStore.getState().token ?? null
 });
+
+const defaultFilters: ModelFilterValues = {
+  search: "",
+  vendorName: "",
+  priceModel: "",
+  priceCurrency: "",
+  capability: "",
+  license: ""
+};
+
+const priceModelOptions = [
+  { label: "All pricing", value: "" },
+  { label: "Token based", value: "token" },
+  { label: "Per call", value: "call" },
+  { label: "Tiered", value: "tiered" }
+];
+
+const currencyOptions = [
+  { label: "All currencies", value: "" },
+  { label: "USD", value: "USD" },
+  { label: "EUR", value: "EUR" },
+  { label: "CNY", value: "CNY" },
+  { label: "JPY", value: "JPY" }
+];
 
 const readField = <T = unknown>(model: any, snake: string, camel?: string): T | undefined => {
   if (model && Object.prototype.hasOwnProperty.call(model, snake)) {
@@ -64,10 +92,47 @@ interface ImportResult {
 }
 
 export default function AdminModelsPage() {
-  const { data, refetch, isFetching } = useAdminModels();
+  const [filters, setFilters] = useState<ModelFilterValues>(defaultFilters);
+  const adminFilters = useMemo(
+    () => ({
+      search: filters.search || undefined,
+      vendor_name: filters.vendorName || undefined,
+      price_model: filters.priceModel || undefined,
+      price_currency: filters.priceCurrency || undefined,
+      capabilities: filters.capability || undefined,
+      license: filters.license || undefined
+    }),
+    [filters]
+  );
+  const { data, refetch, isFetching } = useAdminModels(adminFilters);
+  const { data: filterOptions, isLoading: filtersLoading } = useModelFilterOptions();
   const router = useRouter();
 
   const models = useMemo(() => data?.items ?? [], [data?.items]);
+
+  const vendorOptions = useMemo(
+    () => [
+      { label: "All vendors", value: "" },
+      ...((filterOptions?.vendors ?? []).map((vendor) => ({ label: vendor, value: vendor })))
+    ],
+    [filterOptions?.vendors]
+  );
+
+  const capabilityOptions = useMemo(
+    () => [
+      { label: "All capabilities", value: "" },
+      ...((filterOptions?.capabilities ?? []).map((capability) => ({ label: capability, value: capability })))
+    ],
+    [filterOptions?.capabilities]
+  );
+
+  const licenseOptions = useMemo(
+    () => [
+      { label: "All licenses", value: "" },
+      ...((filterOptions?.licenses ?? []).map((license) => ({ label: license, value: license })))
+    ],
+    [filterOptions?.licenses]
+  );
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -177,6 +242,10 @@ export default function AdminModelsPage() {
     }
   }, [importText, refetch]);
 
+  const updateFilter = <K extends keyof ModelFilterValues>(field: K, value: ModelFilterValues[K]) => {
+    setFilters((current) => ({ ...current, [field]: value }));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -201,6 +270,63 @@ export default function AdminModelsPage() {
           <Button onClick={() => router.push("/admin/dashboard/models/new")}>Add model</Button>
         </div>
       </div>
+      <Card
+        title="Filters"
+        description="Narrow down models by vendor, capabilities, licensing, and pricing."
+        actions={
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setFilters({ ...defaultFilters })}
+            disabled={filtersLoading}
+          >
+            Reset filters
+          </Button>
+        }
+      >
+        <form className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Input
+            label="Search"
+            value={filters.search}
+            onChange={(event) => updateFilter("search", event.target.value)}
+            placeholder="Model or vendor"
+          />
+          <Select
+            label="Vendor"
+            value={filters.vendorName}
+            onChange={(event) => updateFilter("vendorName", event.target.value)}
+            options={vendorOptions}
+            disabled={filtersLoading}
+          />
+          <Select
+            label="Capability"
+            value={filters.capability}
+            onChange={(event) => updateFilter("capability", event.target.value)}
+            options={capabilityOptions}
+            disabled={filtersLoading}
+          />
+          <Select
+            label="License"
+            value={filters.license}
+            onChange={(event) => updateFilter("license", event.target.value)}
+            options={licenseOptions}
+            disabled={filtersLoading}
+          />
+          <Select
+            label="Pricing model"
+            value={filters.priceModel}
+            onChange={(event) => updateFilter("priceModel", event.target.value)}
+            options={priceModelOptions}
+          />
+          <Select
+            label="Currency"
+            value={filters.priceCurrency}
+            onChange={(event) => updateFilter("priceCurrency", event.target.value)}
+            options={currencyOptions}
+          />
+        </form>
+      </Card>
       {exportError && <p className="text-sm text-rose-500">{exportError}</p>}
       {showImportPanel && (
         <Card
@@ -288,11 +414,16 @@ export default function AdminModelsPage() {
             {
               header: "Pricing",
               accessor: (model) => (
-                <span className="text-xs uppercase text-slate-500 dark:text-slate-400">
-                  {readField<string>(model, "price_model", "priceModel") ?? "n/a"} •
-                  {" "}
-                  {readField<string>(model, "price_currency", "priceCurrency") ?? ""}
-                </span>
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  <PriceDisplay
+                    price={{
+                      price_model: readField<string>(model, "price_model", "priceModel"),
+                      price_currency: readField<string>(model, "price_currency", "priceCurrency"),
+                      price_data: readField<Record<string, unknown>>(model, "price_data", "priceData")
+                    }}
+                    variant="compact"
+                  />
+                </div>
               )
             },
             {
