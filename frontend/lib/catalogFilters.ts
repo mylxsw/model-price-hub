@@ -11,6 +11,10 @@ export const defaultModelFilters: ModelFilterValues = {
 };
 
 export const catalogSortOptions: { label: string; value: string }[] = [
+  { label: "Created (newest)", value: "created_desc" },
+  { label: "Created (oldest)", value: "created_asc" },
+  { label: "Updated (newest)", value: "updated_desc" },
+  { label: "Updated (oldest)", value: "updated_asc" },
   { label: "Release date (newest)", value: "release_desc" },
   { label: "Release date (oldest)", value: "release_asc" },
   { label: "Price (low to high)", value: "price_asc" },
@@ -20,7 +24,7 @@ export const catalogSortOptions: { label: string; value: string }[] = [
   { label: "Model name (Z-A)", value: "model_desc" }
 ];
 
-export const defaultCatalogSort = catalogSortOptions[0]?.value ?? "release_desc";
+export const defaultCatalogSort = catalogSortOptions[0]?.value ?? "created_desc";
 
 export function filtersAreEqual(a: ModelFilterValues, b: ModelFilterValues) {
   return (

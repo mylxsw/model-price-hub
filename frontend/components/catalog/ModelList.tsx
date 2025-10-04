@@ -150,7 +150,7 @@ export function ModelList({ models, onSelectCapability, onSelectLicense, toolbar
   }), [markdownComponents]);
 
   const renderToolbar = toolbarLeft || toolbarRight ? (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 py-4 dark:border-slate-800">
       <div className="flex flex-wrap items-center gap-3">{toolbarLeft}</div>
       <div className="flex flex-1 justify-end">
         <div className="flex flex-wrap items-center justify-end gap-3">{toolbarRight}</div>

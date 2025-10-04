@@ -23,6 +23,7 @@ interface ModelFilterPanelProps {
   values: ModelFilterValues;
   onChange: (values: ModelFilterValues) => void;
   onReset: () => void;
+  variant?: "dialog" | "inline";
 }
 
 const emptyFilters: ModelFilterValues = {
@@ -44,7 +45,7 @@ const priceModelOptions = [
   { label: "Unknown", value: "unknown" }
 ];
 
-export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanelProps) {
+export function ModelFilterPanel({ values, onChange, onReset, variant = "dialog" }: ModelFilterPanelProps) {
   const [localValues, setLocalValues] = useState(values);
   const [pendingReset, setPendingReset] = useState(false);
   const { data: filterOptions, isLoading: optionsLoading } = useModelFilterOptions();
@@ -57,11 +58,14 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
   }, [values]);
 
   useEffect(() => {
+    if (variant !== "dialog") {
+      return undefined;
+    }
     registerFocusHandler(() => {
       inputRef.current?.focus();
     });
     return () => registerFocusHandler(null);
-  }, [registerFocusHandler]);
+  }, [registerFocusHandler, variant]);
 
   const updateField = <K extends keyof ModelFilterValues>(field: K, value: ModelFilterValues[K]) => {
     setLocalValues((current) => ({ ...current, [field]: value }));
@@ -75,7 +79,9 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
       onChange(localValues);
     }
     setPendingReset(false);
-    close();
+    if (variant === "dialog") {
+      close();
+    }
   };
 
   const vendorOptions = useMemo(
@@ -112,70 +118,94 @@ export function ModelFilterPanel({ values, onChange, onReset }: ModelFilterPanel
     );
   }, [filterOptions?.categories]);
 
+  const containerClasses =
+    variant === "dialog"
+      ? "flex h-full max-h-full w-full flex-col gap-6 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-xl transition dark:border-slate-800 dark:bg-slate-900/80"
+      : "flex w-full flex-col gap-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition dark:border-slate-800 dark:bg-slate-900";
+
+  const fieldsLayoutClass =
+    variant === "dialog"
+      ? "flex flex-col gap-4"
+      : "grid gap-4 sm:grid-cols-2 xl:grid-cols-3";
+
+  const searchFieldClass = variant === "dialog" ? "" : "w-full sm:max-w-md xl:max-w-lg";
+
+  const actionContainerClass =
+    variant === "dialog"
+      ? "mt-auto flex flex-col gap-3 sm:flex-row"
+      : "pt-2 flex flex-col gap-3 sm:flex-row sm:justify-end";
+
+  const actionButtonClass = variant === "dialog" ? "w-full sm:flex-1" : "w-full sm:w-auto";
+
   return (
-    <aside className="flex h-full max-h-full w-full flex-col gap-6 rounded-xl border border-slate-200 bg-white/95 p-6 shadow-xl transition dark:border-slate-800 dark:bg-slate-900/80">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-100">Refine results</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Search, filter, and tailor the catalog to your needs.</p>
+    <aside className={containerClasses}>
+      <div className={fieldsLayoutClass}>
+        <div className={searchFieldClass}>
+          <Input
+            ref={inputRef}
+            label="Search"
+            placeholder="Model or vendor"
+            value={localValues.search}
+            onChange={(event) => updateField("search", event.target.value)}
+          />
         </div>
-        <Button variant="ghost" size="sm" onClick={close} aria-label="Close filters" className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
-          ×
-        </Button>
+        <div>
+          <Select
+            label="Vendor"
+            value={localValues.vendorName}
+            onChange={(event) => updateField("vendorName", event.target.value)}
+            options={vendorOptions}
+            disabled={optionsLoading}
+          />
+        </div>
+        <div>
+          <Select
+            label="Capability"
+            value={localValues.capability}
+            onChange={(event) => updateField("capability", event.target.value)}
+            options={capabilityOptions}
+            disabled={optionsLoading}
+          />
+        </div>
+        <div>
+          <Select
+            label="License"
+            value={localValues.license}
+            onChange={(event) => updateField("license", event.target.value)}
+            options={licenseOptions}
+            disabled={optionsLoading}
+          />
+        </div>
+        <div>
+          <Select
+            label="Category"
+            value={localValues.category}
+            onChange={(event) => updateField("category", event.target.value)}
+            options={categoryOptions}
+            disabled={optionsLoading}
+          />
+        </div>
+        <div>
+          <Select
+            label="Pricing model"
+            value={localValues.priceModel}
+            onChange={(event) => updateField("priceModel", event.target.value)}
+            options={priceModelOptions}
+          />
+        </div>
       </div>
-      <Input
-        ref={inputRef}
-        label="Search"
-        placeholder="Model or vendor"
-        value={localValues.search}
-        onChange={(event) => updateField("search", event.target.value)}
-      />
-      <Select
-        label="Vendor"
-        value={localValues.vendorName}
-        onChange={(event) => updateField("vendorName", event.target.value)}
-        options={vendorOptions}
-        disabled={optionsLoading}
-      />
-      <Select
-        label="Capability"
-        value={localValues.capability}
-        onChange={(event) => updateField("capability", event.target.value)}
-        options={capabilityOptions}
-        disabled={optionsLoading}
-      />
-      <Select
-        label="License"
-        value={localValues.license}
-        onChange={(event) => updateField("license", event.target.value)}
-        options={licenseOptions}
-        disabled={optionsLoading}
-      />
-      <Select
-        label="Category"
-        value={localValues.category}
-        onChange={(event) => updateField("category", event.target.value)}
-        options={categoryOptions}
-        disabled={optionsLoading}
-      />
-      <Select
-        label="Pricing model"
-        value={localValues.priceModel}
-        onChange={(event) => updateField("priceModel", event.target.value)}
-        options={priceModelOptions}
-      />
-      <div className="mt-auto flex flex-col gap-3 sm:flex-row">
+      <div className={actionContainerClass}>
         <Button
           variant="secondary"
           onClick={() => {
             setLocalValues({ ...emptyFilters });
             setPendingReset(true);
           }}
-          className="w-full sm:flex-1"
+          className={actionButtonClass}
         >
           Reset filters
         </Button>
-        <Button onClick={handleApply} className="w-full sm:flex-1">
+        <Button onClick={handleApply} className={actionButtonClass}>
           Apply
         </Button>
       </div>

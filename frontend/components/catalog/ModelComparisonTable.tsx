@@ -9,6 +9,9 @@ import { Card } from "../ui/Card";
 import { CatalogModel, formatReleaseDate, normalizeStringArray } from "./ModelList";
 import { PriceDisplay } from "./PriceDisplay";
 
+const TOKENS_PER_KILO = 1024;
+const TOKENS_PER_MEGA = TOKENS_PER_KILO * 1024;
+
 const readField = <T = unknown>(model: Record<string, unknown>, ...keys: string[]): T | undefined => {
   if (!model) return undefined;
   for (const key of keys) {
@@ -177,12 +180,12 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
                       if (value === undefined || value === null) return null;
                       const numeric = typeof value === "string" ? Number(value) : value;
                       if (!Number.isFinite(numeric) || numeric <= 0) return null;
-                      if (numeric >= 1_000_000) {
-                        const millions = Math.round(numeric / 1_000_000);
+                      if (numeric >= TOKENS_PER_MEGA) {
+                        const millions = Math.round(numeric / TOKENS_PER_MEGA);
                         return `${millions}M tokens`;
                       }
-                      if (numeric >= 1_000) {
-                        const thousands = Math.round(numeric / 1_000);
+                      if (numeric >= TOKENS_PER_KILO) {
+                        const thousands = Math.round(numeric / TOKENS_PER_KILO);
                         return `${thousands}K tokens`;
                       }
                       return `${Math.round(numeric)} tokens`;

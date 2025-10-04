@@ -34,7 +34,7 @@ export function CurrencySelector({ className, size = "sm" }: CurrencySelectorPro
         onChange={(event) => setSelectedCurrency(event.target.value)}
         disabled={isLoading}
         className={classNames(
-          "rounded-md border border-slate-300 bg-white text-xs font-semibold uppercase tracking-wide text-slate-600 shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
+          "rounded-md border border-slate-300 bg-white text-xs uppercase tracking-wide text-slate-600 shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200",
           {
             "px-2 py-1": size === "sm",
             "px-3 py-2 text-sm": size === "md"

@@ -47,6 +47,9 @@ interface TierPricing {
 }
 
 const MILLION_TOKEN_LABEL = "1M Tokens";
+const TOKENS_PER_KILO = 1024;
+const TOKENS_PER_MEGA = TOKENS_PER_KILO * 1024;
+const KILOS_PER_MEGA = TOKENS_PER_MEGA / TOKENS_PER_KILO;
 
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
@@ -61,11 +64,11 @@ const convertToPerMillion = (amount: unknown, per?: unknown): number | undefined
   }
 
   if (normalized.includes("1k") || normalized.includes("1000")) {
-    return amount * 1000;
+    return amount * TOKENS_PER_KILO;
   }
 
   if (normalized.includes("token")) {
-    return amount * 1_000_000;
+    return amount * TOKENS_PER_MEGA;
   }
 
   return amount;
@@ -304,14 +307,14 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
       return price;
     }
 
-    // Convert from 1M to 1K (divide by 1000 - 1K should be cheaper)
+    // Convert from 1M to 1K (divide by 1024 - 1K should be cheaper)
     if (normalizedCurrentUnit.includes("1m") && normalizedSelectedUnit === "1k") {
-      return price / 1000;
+      return price / KILOS_PER_MEGA;
     }
 
-    // Convert from 1K to 1M (multiply by 1000 - 1M should be more expensive)
+    // Convert from 1K to 1M (multiply by 1024 - 1M should be more expensive)
     if (normalizedCurrentUnit.includes("1k") && normalizedSelectedUnit === "1m") {
-      return price * 1000;
+      return price * KILOS_PER_MEGA;
     }
 
     // Default case: assume it's already in the right unit

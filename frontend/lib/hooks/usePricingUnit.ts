@@ -4,6 +4,10 @@ import { create } from "zustand";
 
 export type PricingUnit = "1K" | "1M";
 
+const TOKENS_PER_KILO = 1024;
+const TOKENS_PER_MEGA = TOKENS_PER_KILO * 1024;
+const KILOS_PER_MEGA = TOKENS_PER_MEGA / TOKENS_PER_KILO;
+
 interface PricingUnitState {
   selectedUnit: PricingUnit;
   setSelectedUnit: (unit: PricingUnit) => void;
@@ -32,7 +36,7 @@ export function usePricingUnit() {
     }
 
     if (selectedUnit === "1K") {
-      return price / 1000; // Convert from per 1M to per 1K (price should be 1000x smaller)
+      return price / KILOS_PER_MEGA; // Convert from per 1M to per 1K (price should be 1024x smaller)
     }
 
     return price;
@@ -43,7 +47,7 @@ export function usePricingUnit() {
   };
 
   const getUnitMultiplier = (): number => {
-    return selectedUnit === "1K" ? 1000 : 1000000;
+    return selectedUnit === "1K" ? TOKENS_PER_KILO : TOKENS_PER_MEGA;
   };
 
   return {

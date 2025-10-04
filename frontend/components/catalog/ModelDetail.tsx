@@ -5,6 +5,9 @@ import { Badge } from "../ui/Badge";
 import { Card } from "../ui/Card";
 import { PriceDisplay } from "./PriceDisplay";
 
+const TOKENS_PER_KILO = 1024;
+const TOKENS_PER_MEGA = TOKENS_PER_KILO * 1024;
+
 interface ModelDetailProps {
   model: {
     id: number;
@@ -223,12 +226,12 @@ function formatTokens(value?: number | string | null): string {
   if (!Number.isFinite(numeric) || numeric <= 0) {
     return "—";
   }
-  if (numeric >= 1_000_000) {
-    const millions = Math.round(numeric / 1_000_000);
+  if (numeric >= TOKENS_PER_MEGA) {
+    const millions = Math.round(numeric / TOKENS_PER_MEGA);
     return `${millions}M tokens`;
   }
-  if (numeric >= 1_000) {
-    const thousands = Math.round(numeric / 1_000);
+  if (numeric >= TOKENS_PER_KILO) {
+    const thousands = Math.round(numeric / TOKENS_PER_KILO);
     return `${thousands}K tokens`;
   }
   return `${Math.round(numeric)} tokens`;

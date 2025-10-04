@@ -100,6 +100,10 @@ class ModelRepository(BaseRepository[Model]):
                 order_column = func.lower(Model.model)
             elif key == "release":
                 order_column = Model.release_date
+            elif key == "created":
+                order_column = Model.created_at
+            elif key == "updated":
+                order_column = Model.updated_at
             else:
                 order_column = None
 
