@@ -515,21 +515,20 @@ export default function AdminModelsPage() {
             },
             {
               header: "Release",
-              accessor: (model) => (
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  {(() => {
-                    const value = readField<string>(model, "release_date", "releaseDate");
-                    if (!value) return "—";
-                    const date = new Date(value);
-                    if (Number.isNaN(date.getTime())) return "—";
-                    return new Intl.DateTimeFormat("en", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric"
-                    }).format(date);
-                  })()}
-                </span>
-              )
+              accessor: (model) => {
+                const value = readField<string>(model, "release_date", "releaseDate");
+                const display = (() => {
+                  if (!value) return "-";
+                  const date = new Date(value);
+                  if (Number.isNaN(date.getTime())) return "-";
+                  return new Intl.DateTimeFormat("en", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric"
+                  }).format(date);
+                })();
+                return <span className="text-xs text-slate-500 dark:text-slate-400">{display}</span>;
+              }
             },
             {
               header: "Capabilities",

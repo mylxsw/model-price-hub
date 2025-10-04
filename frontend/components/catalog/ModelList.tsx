@@ -193,6 +193,7 @@ export function ModelList({ models, onSelectCapability, onSelectLicense, toolbar
               const releaseDate = formatReleaseDate(
                 readField<string | null>(record, "releaseDate", "release_date") ?? null
               );
+              const releaseDateDisplay = releaseDate ?? "-";
               const priceModel = readField<string>(record, "priceModel", "price_model");
               const priceCurrency = readField<string>(record, "priceCurrency", "price_currency");
               const priceData = readField<Record<string, unknown> | string>(
@@ -286,11 +287,7 @@ export function ModelList({ models, onSelectCapability, onSelectLicense, toolbar
                     />
                   </td>
                   <td className="px-4 py-4 align-top">
-                    {releaseDate ? (
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{releaseDate}</span>
-                    ) : (
-                      <span className="text-xs text-slate-400 dark:text-slate-500">Pending</span>
-                    )}
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{releaseDateDisplay}</span>
                   </td>
                   <td className="px-4 py-4 align-top text-right">
                     <Link

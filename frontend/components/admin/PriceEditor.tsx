@@ -24,16 +24,27 @@ const ensureRecord = (maybeRecord: unknown): Record<string, unknown> => {
   return maybeRecord && typeof maybeRecord === "object" ? (maybeRecord as Record<string, unknown>) : {};
 };
 
+const readNumericField = (record: Record<string, unknown>, key: string): number | null => {
+  const raw = record[key];
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return raw;
+  }
+  if (typeof raw === "string") {
+    return toNumberOrNull(raw);
+  }
+  return null;
+};
+
 function renderTokenPricing(value: PriceData, onChange: (nextValue: Record<string, unknown> | null) => void) {
-  const baseRaw = ensureRecord(ensureRecord(value).base);
+  const baseSource = ensureRecord(ensureRecord(value).base);
   const base = {
-    input_token_1m: baseRaw.input_token_1m ?? null,
-    output_token_1m: baseRaw.output_token_1m ?? null,
-    input_token_cached_1m: baseRaw.input_token_cached_1m ?? null
+    input_token_1m: readNumericField(baseSource, "input_token_1m"),
+    output_token_1m: readNumericField(baseSource, "output_token_1m"),
+    input_token_cached_1m: readNumericField(baseSource, "input_token_cached_1m")
   };
 
   const handleUpdate = (field: keyof typeof base, raw: string) => {
-    const nextBase = { ...base, [field]: toNumberOrNull(raw) };
+    const nextBase = { ...baseSource, [field]: toNumberOrNull(raw) };
     onChange({ base: nextBase });
   };
 
@@ -68,10 +79,14 @@ function renderTokenPricing(value: PriceData, onChange: (nextValue: Record<strin
 }
 
 function renderCallPricing(value: PriceData, onChange: (nextValue: Record<string, unknown> | null) => void) {
-  const base = ensureRecord(ensureRecord(value).base);
-  const handleUpdate = (field: string, raw: string) => {
-    const nextValue = field === "included_calls" ? (raw.trim() ? Number(raw) : null) : toNumberOrNull(raw);
-    const nextBase = { ...base, [field]: nextValue };
+  const baseSource = ensureRecord(ensureRecord(value).base);
+  const base = {
+    price_per_call: readNumericField(baseSource, "price_per_call"),
+    included_calls: readNumericField(baseSource, "included_calls")
+  };
+  const handleUpdate = (field: keyof typeof base, raw: string) => {
+    const nextValue = field === "included_calls" ? (raw.trim() ? Number(raw) || null : null) : toNumberOrNull(raw);
+    const nextBase = { ...baseSource, [field]: nextValue };
     onChange({ base: nextBase });
   };
 

@@ -266,17 +266,15 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
               <th scope="row" className="whitespace-nowrap px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Release
               </th>
-              {models.map((model) => (
-                <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
-                  {formatReleaseDate(model.release_date) ? (
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                      {formatReleaseDate(model.release_date)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400 dark:text-slate-500">Pending</span>
-                  )}
-                </td>
-              ))}
+              {models.map((model) => {
+                const releaseDate = formatReleaseDate(model.release_date);
+                const releaseDisplay = releaseDate ?? "-";
+                return (
+                  <td key={model.id} className="px-4 py-4 align-top" style={{ width: columnWidth }}>
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{releaseDisplay}</span>
+                  </td>
+                );
+              })}
             </tr>
             <tr>
               <th scope="row" className="whitespace-nowrap px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">

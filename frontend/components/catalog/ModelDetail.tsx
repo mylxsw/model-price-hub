@@ -72,6 +72,7 @@ export function ModelDetail({ model }: ModelDetailProps) {
   const releaseDateRaw = readField<string | null>("releaseDate", "release_date");
   const priceData = readField<Record<string, unknown> | string>("priceData", "price_data");
   const releaseDate = releaseDateRaw ? new Date(releaseDateRaw) : null;
+  const hasValidReleaseDate = releaseDate && !Number.isNaN(releaseDate.getTime());
   const modelUrl = readField<string>("modelUrl", "model_url");
   const maxContextTokens = readField<number | string>("max_context_tokens", "maxContextTokens");
   const maxOutputTokens = readField<number | string>("max_output_tokens", "maxOutputTokens");
@@ -141,11 +142,11 @@ export function ModelDetail({ model }: ModelDetailProps) {
               </a>
             </div>
           )}
-          {releaseDate && !Number.isNaN(releaseDate.getTime()) && (
-            <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Released {new Intl.DateTimeFormat("en", { year: "numeric", month: "long", day: "numeric" }).format(releaseDate)}
-            </div>
-          )}
+          <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Released {hasValidReleaseDate
+              ? new Intl.DateTimeFormat("en", { year: "numeric", month: "long", day: "numeric" }).format(releaseDate)
+              : "-"}
+          </div>
           {(capabilities.length > 0 || licenses.length > 0) && (
             <div className="space-y-3">
               {capabilities.length > 0 && (
