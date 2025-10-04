@@ -37,174 +37,211 @@ def convert_cny_to_usd(cny_price: float) -> float:
     CNY_TO_USD_RATE = 0.14
     return cny_price * CNY_TO_USD_RATE
 
+CAPABILITY_MAPPING = {
+    "chat": "TEXT",
+    "function_calling": "TOOLS",
+    "tools": "TOOLS",
+    "web_search": "WEB_SEARCH",
+    "image": "VISION",
+    "image_input": "VISION",
+    "image_output": "VISION",
+    "audio_input": "AUDIO_INPUT",
+    "audio_output": "AUDIO_OUTPUT",
+    "think": "THINK",
+}
+
+
 def parse_capabilities(model_data) -> list:
-    """Extract capabilities from Aliyun Bailian model data"""
+    """Extract normalized capabilities from Aliyun Bailian model data"""
     caps = set()
-    
+
     capabilities = model_data.get("capabilities", {})
-    
-    # Function calling
+
     if capabilities.get("function_calling", False):
-        caps.add("tools")
         caps.add("function_calling")
-    
-    # Web search
+        caps.add("tools")
+
     if capabilities.get("web_search", False):
         caps.add("web_search")
-    
-    # Cache support
-    if capabilities.get("cache", False):
-        caps.add("cache")
-    
-    # Structured output
-    if capabilities.get("structured_output", False):
-        caps.add("structured_output")
-    
-    # Input modalities
+
     input_modalities = capabilities.get("input_modalities", {})
     if input_modalities.get("text", False):
-        caps.add("text_input")
+        caps.add("chat")
     if input_modalities.get("image", False):
         caps.add("image_input")
     if input_modalities.get("audio", False):
         caps.add("audio_input")
     if input_modalities.get("video", False):
         caps.add("video_input")
-    
-    # Output modalities
+
     output_modalities = capabilities.get("output_modalities", {})
-    if output_modalities.get("text", False):
-        caps.add("text_output")
     if output_modalities.get("image", False):
         caps.add("image_output")
     if output_modalities.get("audio", False):
         caps.add("audio_output")
     if output_modalities.get("video", False):
         caps.add("video_output")
-    
-    # Chat capability (assume all text models support chat)
-    if input_modalities.get("text", False) and output_modalities.get("text", False):
-        caps.add("chat")
-    
-    return sorted(caps)
+
+    if capabilities.get("think", False):
+        caps.add("think")
+
+    return sorted({CAPABILITY_MAPPING[cap] for cap in caps if cap in CAPABILITY_MAPPING})
+
+
+def determine_categories(model_data) -> list:
+    CATEGORY_TEXT = "文本生成"
+    CATEGORY_IMAGE = "图像生成"
+    CATEGORY_VIDEO = "视频生成"
+    CATEGORY_AUDIO = "音频生成"
+
+    explicit = model_data.get("model_type") or model_data.get("type") or model_data.get("category")
+    if isinstance(explicit, str):
+        lowered = explicit.strip().lower()
+        if lowered:
+            if "image" in lowered or "vision" in lowered or "图像" in lowered:
+                return [CATEGORY_IMAGE]
+            if "video" in lowered or "视频" in lowered:
+                return [CATEGORY_VIDEO]
+            if "audio" in lowered or "语音" in lowered or "声音" in lowered:
+                return [CATEGORY_AUDIO]
+            return [CATEGORY_TEXT]
+
+    capabilities = model_data.get("capabilities", {})
+    input_modalities = capabilities.get("input_modalities", {}) if isinstance(capabilities, dict) else {}
+    output_modalities = capabilities.get("output_modalities", {}) if isinstance(capabilities, dict) else {}
+
+    if output_modalities.get("video") or input_modalities.get("video"):
+        return [CATEGORY_VIDEO]
+    if output_modalities.get("image") or input_modalities.get("image"):
+        return [CATEGORY_IMAGE]
+    if output_modalities.get("audio") or input_modalities.get("audio"):
+        return [CATEGORY_AUDIO]
+
+    pricing = model_data.get("pricing") or []
+    if isinstance(pricing, list) and pricing:
+        first_unit = (pricing[0] or {}).get("unit")
+        if isinstance(first_unit, str):
+            lowered = first_unit.lower()
+            if "秒" in lowered or "video" in lowered:
+                return [CATEGORY_VIDEO]
+            if "张" in lowered or "image" in lowered:
+                return [CATEGORY_IMAGE]
+            if "audio" in lowered or "秒/条" in lowered:
+                return [CATEGORY_AUDIO]
+
+    return [CATEGORY_TEXT]
+
+
+def format_tier_entry(name, billing, unit, **prices):
+    tier = {"name": name, "billing": billing, "unit": unit}
+    for key, value in prices.items():
+        if value is not None:
+            tier[key] = value
+    return tier
 
 def compute_price(pricing_list) -> tuple:
     """Convert Aliyun Bailian pricing into our project's price_model/currency/price_data format"""
-    if not pricing_list or len(pricing_list) == 0:
+    if not pricing_list:
         return None, None, None
-    
-    currency = "USD"  # We convert to USD
-    
-    # Check if this is token-based pricing
-    first_pricing = pricing_list[0]
-    unit = first_pricing.get("unit", "")
-    
-    if "Token" in unit or "token" in unit:
-        # Token-based pricing
-        price_data = {"base": {}}
-        
-        # If there are multiple pricing tiers, use the first one as base
-        # and store all tiers for reference
+
+    currency = "USD"
+    first_pricing = pricing_list[0] or {}
+    unit_value = str(first_pricing.get("unit", ""))
+    unit_lower = unit_value.lower()
+
+    if "token" in unit_lower:
         tiers = []
-        
-        for pricing in pricing_list:
-            input_price_cny = to_float(pricing.get("input_price", 0))
-            output_price_cny = to_float(pricing.get("output_price", 0))
+        for index, pricing in enumerate(pricing_list):
+            name = pricing.get("range") or f"Tier {index + 1}"
+            input_price_cny = to_float(pricing.get("input_price"))
+            output_price_cny = to_float(pricing.get("output_price"))
             cache_price_cny = to_float(pricing.get("cache_price"))
-            range_desc = pricing.get("range", "")
-            
-            tier_data = {"range": range_desc}
-            
-            if input_price_cny and input_price_cny > 0:
-                # Convert from 元/千Token to USD per 1M tokens
-                input_price_usd_per_1m = convert_cny_to_usd(input_price_cny) * 1000
-                tier_data["input_token_1m"] = input_price_usd_per_1m
-                
-                # Set base price from first tier
-                if len(tiers) == 0:
-                    price_data["base"]["input_token_1m"] = input_price_usd_per_1m
-            
-            if output_price_cny and output_price_cny > 0:
-                # Convert from 元/千Token to USD per 1M tokens
-                output_price_usd_per_1m = convert_cny_to_usd(output_price_cny) * 1000
-                tier_data["output_token_1m"] = output_price_usd_per_1m
-                
-                # Set base price from first tier
-                if len(tiers) == 0:
-                    price_data["base"]["output_token_1m"] = output_price_usd_per_1m
-            
-            if cache_price_cny and cache_price_cny > 0:
-                cache_price_usd_per_1m = convert_cny_to_usd(cache_price_cny) * 1000
-                tier_data["cache_token_1m"] = cache_price_usd_per_1m
-                
-                # Set base cache price from first tier
-                if len(tiers) == 0:
-                    price_data["base"]["cache_token_1m"] = cache_price_usd_per_1m
-            
-            tiers.append(tier_data)
-        
-        # Store all tiers for reference
-        if len(tiers) > 1:
-            price_data["tiers"] = tiers
-        
-        return "token", currency, price_data
-        
-    elif "秒" in unit:
-        # Video generation pricing (per second)
-        price_data = {"base": {}}
+
+            input_price_usd = convert_cny_to_usd(input_price_cny) * 1000 if input_price_cny else None
+            output_price_usd = convert_cny_to_usd(output_price_cny) * 1000 if output_price_cny else None
+            cache_price_usd = convert_cny_to_usd(cache_price_cny) * 1000 if cache_price_cny else None
+
+            tier = format_tier_entry(
+                name,
+                billing="token",
+                unit="1M Tokens",
+                input_price_per_unit=input_price_usd,
+                output_price_per_unit=output_price_usd,
+                cached_price_per_unit=cache_price_usd,
+            )
+            if any(k.endswith("_per_unit") for k in tier):
+                tiers.append(tier)
+
+        if not tiers:
+            return None, None, None
+
+        if len(tiers) == 1:
+            base = tiers[0]
+            key_mapping = {
+                "input_price_per_unit": "input_token_1m",
+                "output_price_per_unit": "output_token_1m",
+                "cached_price_per_unit": "cache_token_1m",
+            }
+            price_data = {
+                "base": {
+                    key_mapping[key]: value
+                    for key, value in base.items()
+                    if key in key_mapping and value is not None
+                }
+            }
+            if price_data["base"]:
+                return "token", currency, price_data
+            return None, None, None
+
+        return "tiered", currency, {"currency": currency, "tiers": tiers}
+
+    if "秒" in unit_lower or "second" in unit_lower:
         tiers = []
-        
-        for pricing in pricing_list:
-            input_price_cny = to_float(pricing.get("input_price", 0))
-            range_desc = pricing.get("range", "")
-            
-            tier_data = {"range": range_desc}
-            
-            if input_price_cny and input_price_cny > 0:
-                price_per_second_usd = convert_cny_to_usd(input_price_cny)
-                tier_data["price_per_second"] = price_per_second_usd
-                
-                # Set base price from first tier
-                if len(tiers) == 0:
-                    price_data["base"]["price_per_second"] = price_per_second_usd
-            
-            tiers.append(tier_data)
-        
-        if len(tiers) > 1:
-            price_data["tiers"] = tiers
-        
-        return "video", currency, price_data
-        
-    elif "张" in unit:
-        # Image processing pricing (per image)
-        first_pricing = pricing_list[0]
-        input_price_cny = to_float(first_pricing.get("input_price", 0))
-        
-        if input_price_cny and input_price_cny > 0:
-            price_per_image_usd = convert_cny_to_usd(input_price_cny)
-            return "image", currency, {"base": {"price_per_image": price_per_image_usd}}
-    
+        for index, pricing in enumerate(pricing_list):
+            name = pricing.get("range") or f"Tier {index + 1}"
+            price_cny = to_float(pricing.get("input_price")) or to_float(pricing.get("output_price"))
+            price_usd = convert_cny_to_usd(price_cny) if price_cny else None
+            tier = format_tier_entry(name, billing="requests", unit="Seconds", price_per_unit=price_usd)
+            if tier.get("price_per_unit") is not None:
+                tiers.append(tier)
+
+        if not tiers:
+            return None, None, None
+        return "tiered", currency, {"currency": currency, "tiers": tiers}
+
+    if "张" in unit_lower or "image" in unit_lower:
+        tiers = []
+        for index, pricing in enumerate(pricing_list):
+            name = pricing.get("range") or f"Tier {index + 1}"
+            price_cny = to_float(pricing.get("input_price")) or to_float(pricing.get("output_price"))
+            price_usd = convert_cny_to_usd(price_cny) if price_cny else None
+            tier = format_tier_entry(name, billing="requests", unit="Images", price_per_unit=price_usd)
+            if tier.get("price_per_unit") is not None:
+                tiers.append(tier)
+
+        if not tiers:
+            return None, None, None
+        return "tiered", currency, {"currency": currency, "tiers": tiers}
+
     return None, None, None
 
-def extract_provider_from_data(model_data) -> str:
-    """Extract provider information to create a more specific vendor name"""
-    provider = model_data.get("provider", "")
-    
-    provider_mapping = {
-        "moonshot-ai": "Moonshot AI (百炼)",
-        "qwen": "通义千问 (百炼)",
-        "deepseek": "DeepSeek (百炼)",
-        "zhipu-ai": "智谱AI (百炼)",
-        "wan": "通义万相 (百炼)"
-    }
-    
-    return provider_mapping.get(provider, f"{provider} (百炼)" if provider else "阿里云百炼")
+
+def extract_license(model_data):
+    biaoshi = model_data.get("biaoshi")
+    if isinstance(biaoshi, str):
+        if "opensource" in biaoshi.lower():
+            return ["OpenSource"]
+    elif isinstance(biaoshi, list):
+        normalized = [str(item).lower() for item in biaoshi]
+        if any("opensource" in item for item in normalized):
+            return ["OpenSource"]
+    return None
 
 def build_bulk_items(aliyun_payload) -> list:
     """Convert Aliyun Bailian data to our bulk import format"""
     models_data = aliyun_payload.get("models", [])
     bulk_items = []
-    
+
     for model_data in models_data:
         try:
             # Basic info
@@ -225,14 +262,17 @@ def build_bulk_items(aliyun_payload) -> list:
             
             # Capabilities
             capabilities = parse_capabilities(model_data)
-            
+
+            # Categories
+            categories = determine_categories(model_data)
+
             # Pricing
             pricing_list = model_data.get("pricing", [])
             price_model, price_currency, price_data = compute_price(pricing_list)
-            
-            # Vendor (create specific vendor names based on provider)
-            vendor_name = extract_provider_from_data(model_data)
-            
+
+            vendor_name = "阿里云百炼"
+            license_info = extract_license(model_data)
+
             bulk_item = {
                 "vendorName": vendor_name,
                 "model": model_name,
@@ -246,9 +286,10 @@ def build_bulk_items(aliyun_payload) -> list:
                 "priceModel": price_model,
                 "priceCurrency": price_currency,
                 "priceData": price_data,
+                "categories": categories,
                 "releaseDate": None,  # Not available in the data
                 "note": f"数据来源：阿里云百炼平台",
-                "license": None,
+                "license": license_info,
             }
             
             bulk_items.append(bulk_item)
@@ -287,11 +328,13 @@ def test_conversion(input_file: str) -> None:
         print(f"Model ID: {item['vendorModelId']}")
         print(f"Description: {item['description'][:100]}..." if item['description'] and len(item['description']) > 100 else f"Description: {item['description']}")
         print(f"Capabilities: {item['modelCapability']}")
+        print(f"Categories: {item.get('categories')}")
         print(f"Max Context Tokens: {item['maxContextTokens']}")
         print(f"Max Output Tokens: {item['maxOutputTokens']}")
         print(f"Price Model: {item['priceModel']}")
         print(f"Price Currency: {item['priceCurrency']}")
         print(f"Price Data: {item['priceData']}")
+        print(f"License: {item['license']}")
         print(f"Model URL: {item['modelUrl']}")
         print("-" * 60)
     
@@ -340,9 +383,11 @@ def test_conversion(input_file: str) -> None:
         print(f"Price currency: {price_currency}")
         print(f"Price data: {price_data}")
         
-        # Test vendor extraction
-        vendor_name = extract_provider_from_data(first_model)
-        print(f"Vendor name: {vendor_name}")
+        # Test categories
+        print(f"Categories: {determine_categories(first_model)}")
+
+        # Test license extraction
+        print(f"License: {extract_license(first_model)}")
 
 
 def main():
