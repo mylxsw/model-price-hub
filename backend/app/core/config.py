@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     s3_prefix: Optional[str] = Field(default=None, env="S3_KEY_PREFIX")
     s3_presign_expire_seconds: int = Field(default=300, env="S3_PRESIGN_EXPIRE_SECONDS")
     s3_signature_version: str = Field(default="s3v4", env="S3_SIGNATURE_VERSION")
+    s3_upload_acl: Optional[str] = Field(default="public-read", env="S3_UPLOAD_ACL")
 
     display_currency: str = Field("USD", env="DISPLAY_CURRENCY")
     currency_exchange_rates: dict[str, float] = Field(
@@ -62,6 +63,19 @@ class Settings(BaseSettings):
             return None
         trimmed = value.strip()
         return trimmed.rstrip("/") or None
+
+    @validator("s3_upload_acl", pre=True)
+    def normalize_upload_acl(cls, value: Optional[str]):  # type: ignore[override]
+        if value is None:
+            return None
+        if isinstance(value, str):
+            trimmed = value.strip()
+            if not trimmed:
+                return None
+            if trimmed.lower() in {"none", "null", "false"}:
+                return None
+            return trimmed
+        return value
 
     @validator("display_currency", pre=True)
     def normalize_display_currency(cls, value: Optional[str]):  # type: ignore[override]

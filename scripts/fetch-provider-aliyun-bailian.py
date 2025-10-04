@@ -191,7 +191,7 @@ def format_tier_entry(
 def compute_price(pricing_list: List[Dict[str, Any]]) -> tuple[Optional[str], Optional[str], Optional[dict]]:
     """Convert Aliyun Bailian pricing into our project's price_model/currency/price_data format"""
     if not pricing_list:
-        return None, None, None
+        return "unknown", "USD", None
 
     currency = "USD"
 
@@ -226,7 +226,7 @@ def compute_price(pricing_list: List[Dict[str, Any]]) -> tuple[Optional[str], Op
         # Remove empty tiers (no pricing info)
         tiers = [tier for tier in tiers if any(k.endswith("_per_unit") for k in tier.keys())]
         if not tiers:
-            return None, None, None
+            return "unknown", "USD", None
 
         if len(tiers) == 1:
             base = tiers[0]
@@ -244,7 +244,7 @@ def compute_price(pricing_list: List[Dict[str, Any]]) -> tuple[Optional[str], Op
             }
             if price_data["base"]:
                 return "token", currency, price_data
-            return None, None, None
+            return "unknown", "USD", None
 
         return "tiered", currency, {"currency": currency, "tiers": tiers}
 
@@ -266,7 +266,7 @@ def compute_price(pricing_list: List[Dict[str, Any]]) -> tuple[Optional[str], Op
 
         tiers = [tier for tier in tiers if tier.get("price_per_unit") is not None]
         if not tiers:
-            return None, None, None
+            return "unknown", "USD", None
 
         if len(tiers) == 1:
             return "tiered", currency, {
@@ -294,7 +294,7 @@ def compute_price(pricing_list: List[Dict[str, Any]]) -> tuple[Optional[str], Op
 
         tiers = [tier for tier in tiers if tier.get("price_per_unit") is not None]
         if not tiers:
-            return None, None, None
+            return "unknown", "USD", None
         if len(tiers) == 1:
             return "tiered", currency, {
                 "currency": currency,
@@ -302,7 +302,7 @@ def compute_price(pricing_list: List[Dict[str, Any]]) -> tuple[Optional[str], Op
             }
         return "tiered", currency, {"currency": currency, "tiers": tiers}
 
-    return None, None, None
+    return "unknown", "USD", None
 
 
 def build_bulk_items(aliyun_payload: Dict[str, Any]) -> List[Dict[str, Any]]:

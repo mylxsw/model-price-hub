@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthStore } from "../../lib/hooks/useAuth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useEffect, useState } from "react";
 import { ThemeProvider, useTheme } from "next-themes";
@@ -25,7 +26,28 @@ function HydrationBodyClassSync() {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: (failureCount, error: any) => {
+          if (error?.message?.includes('401')) {
+            useAuthStore.getState().logout();
+            return false;
+          }
+          return failureCount < 3;
+        }
+      },
+      mutations: {
+        retry: (failureCount, error: any) => {
+          if (error?.message?.includes('401')) {
+            useAuthStore.getState().logout();
+            return false;
+          }
+          return failureCount < 3;
+        }
+      }
+    }
+  }));
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>

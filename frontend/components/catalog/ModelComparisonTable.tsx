@@ -138,23 +138,7 @@ export function ModelComparisonTable({ models, onRemoveModel, onClear }: ModelCo
               const licenseLabels = Array.from(new Set(licenseSets.flat())).sort((a, b) => a.localeCompare(b));
 
               const renderPresenceRows = (title: string, items: string[], sets: string[][]) => {
-                if (items.length === 0) {
-                  return (
-                    <tr>
-                      <th
-                        scope="row"
-                        className="whitespace-nowrap px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400"
-                      >
-                        {title}
-                      </th>
-                      {models.map((model) => (
-                        <td key={`${title}-empty-${model.id}`} className="px-4 py-4 align-middle" style={{ width: columnWidth }}>
-                          <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                }
+                if (items.length === 0) return null;
 
                 const labelPrefix = title.replace(/s$/, "");
 

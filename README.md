@@ -34,6 +34,15 @@ Model Price Hub 是一个汇总并对比全球大模型厂商价格、能力等�
 | `ADMIN_USERNAME` | 管理员用户名 |
 | `ADMIN_PASSWORD_HASH` | 通过 `app.core.security.hash_password` 生成的密码哈希 |
 
+如需启用对象存储上传，可设置以下变量：
+
+| 变量 | 说明 |
+| ---- | ---- |
+| `S3_BUCKET` | 对象存储桶名称 |
+| `S3_ENDPOINT` | S3 兼容服务地址（可选） |
+| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | 对象存储访问凭证 |
+| `S3_UPLOAD_ACL` | 预签名上传时附带的 ACL，若服务端不支持（如 Cloudflare R2），可留空 |
+
 ### 2. 本地启动（开发）
 
 ```bash

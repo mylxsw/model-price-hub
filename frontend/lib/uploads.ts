@@ -3,36 +3,37 @@
 import { ApiClient } from "./apiClient";
 import { useAuthStore } from "./hooks/useAuth";
 
+type PresignedFields = Record<string, string>;
+
 interface PresignedUpload {
   uploadUrl: string;
-  fields: Record<string, string>;
+  fields: PresignedFields;
   fileUrl: string;
 }
 
-const client = new ApiClient({
-  getToken: () => useAuthStore.getState().token ?? null
-});
+function buildApiClient() {
+  let cachedToken: string | null = null;
+  return new ApiClient({
+    getToken: () => {
+      const currentToken = useAuthStore.getState().token ?? null;
+      if (currentToken !== cachedToken) {
+        cachedToken = currentToken;
+      }
+      return cachedToken;
+    }
+  });
+}
+
+const client = buildApiClient();
 
 export async function uploadImageToS3(file: File): Promise<string> {
-  const presigned = await client.post<PresignedUpload>("/api/admin/uploads/presign", {
-    filename: file.name,
-    contentType: file.type || "application/octet-stream"
-  });
-
   const formData = new FormData();
-  Object.entries(presigned.fields).forEach(([key, value]) => {
-    formData.append(key, value);
-  });
   formData.append("file", file);
 
-  const response = await fetch(presigned.uploadUrl, {
-    method: "POST",
-    body: formData
-  });
+  const response = await client.post<{ file_url: string; filename: string }>(
+    "/api/admin/uploads/file",
+    formData
+  );
 
-  if (!response.ok) {
-    throw new Error("File upload failed. Please try again.");
-  }
-
-  return presigned.fileUrl;
+  return response.file_url;
 }

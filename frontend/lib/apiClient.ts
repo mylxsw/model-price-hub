@@ -39,15 +39,27 @@ export class ApiClient {
   }
 
   async post<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+    const headers = this.buildHeaders();
+    let bodyInit: BodyInit | null;
+
+    if (body instanceof FormData) {
+      // Let the browser set the Content-Type for FormData
+      delete headers["Content-Type"];
+      bodyInit = body;
+    } else {
+      bodyInit = JSON.stringify(body);
+    }
+
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: "POST",
-      body: JSON.stringify(body),
+      body: bodyInit,
       ...init,
       headers: {
-        ...this.buildHeaders(),
+        ...headers,
         ...init?.headers
       }
     });
+
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}));
       throw new Error(errorBody.detail ?? `Request failed: ${response.status}`);

@@ -261,7 +261,7 @@ export function ModelList({ models, onSelectCapability, onSelectLicense, toolbar
                             {capability}
                           </Badge>
                         ))}
-                        {licenses.length > 0 && licenses.map((license) => (
+                        {licenses.length > 0                         {licenses.length > 0                         {licenses.map((license) => (                        {licenses.map((license) => ( licenses.map((license) => (                        {licenses.length > 0                         {licenses.map((license) => (                        {licenses.map((license) => ( licenses.map((license) => ( licenses.map((license) => (
                           <Badge
                             key={license}
                             color="success"

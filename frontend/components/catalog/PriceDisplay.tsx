@@ -692,7 +692,7 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
     return (
       <div className="space-y-5">
         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <Badge color="primary">{price_model}</Badge>
+          <Badge color="primary">{price_model === "unknown" ? "未知" : price_model}</Badge>
           {tiers.length > 0 && <span>{tiers.length} tier{tiers.length > 1 ? "s" : ""} available</span>}
         </div>
 
@@ -833,12 +833,12 @@ export function PriceDisplay({ price, variant = "compact", layout = "inline" }: 
   }
 
   if (variant === "compact") {
-    return <Badge color="primary">{price_model}</Badge>;
+    return <Badge color="primary">{price_model === "unknown" ? "未知" : price_model}</Badge>;
   }
 
   return (
     <div className="space-y-2">
-      <Badge color="primary">{price_model}</Badge>
+      <Badge color="primary">{price_model === "unknown" ? "未知" : price_model}</Badge>
       {price_data && <div className="text-xs text-slate-600 dark:text-slate-400">Custom pricing - see details</div>}
     </div>
   );
