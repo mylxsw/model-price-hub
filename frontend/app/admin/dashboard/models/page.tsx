@@ -499,38 +499,6 @@ export default function AdminModelsPage() {
               )
             },
             {
-              header: "Pricing",
-              accessor: (model) => (
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  <PriceDisplay
-                    price={{
-                      price_model: readField<string>(model, "price_model", "priceModel"),
-                      price_currency: readField<string>(model, "price_currency", "priceCurrency"),
-                      price_data: readField<Record<string, unknown>>(model, "price_data", "priceData")
-                    }}
-                    variant="compact"
-                  />
-                </div>
-              )
-            },
-            {
-              header: "Release",
-              accessor: (model) => {
-                const value = readField<string>(model, "release_date", "releaseDate");
-                const display = (() => {
-                  if (!value) return "-";
-                  const date = new Date(value);
-                  if (Number.isNaN(date.getTime())) return "-";
-                  return new Intl.DateTimeFormat("en", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric"
-                  }).format(date);
-                })();
-                return <span className="text-xs text-slate-500 dark:text-slate-400">{display}</span>;
-              }
-            },
-            {
               header: "Capabilities",
               accessor: (model) => (
                 <div className="flex flex-wrap gap-1">

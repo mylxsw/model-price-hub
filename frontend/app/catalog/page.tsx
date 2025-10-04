@@ -53,24 +53,27 @@ export default function CatalogPage() {
   const [page, setPage] = useState<number>(1);
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { toggle, isOpen, close, setHasActiveFilters, hasActiveFilters } = useFilterPanelStore();
 
-  const updateSearchParams = useCallback(
-    (nextFilters: ModelFilterValues, nextSort: string, nextPage: number) => {
-      const params = createCatalogSearchParams(nextFilters, nextSort, nextPage);
-      const queryString = params.toString();
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
-    },
-    [pathname, router]
-  );
-
+  // Sync URL params to state on mount and URL changes
   useEffect(() => {
     const params = searchParams ? new URLSearchParams(searchParams.toString()) : new URLSearchParams();
     const { filters: nextFilters, sort: nextSort, page: nextPage } = parseCatalogSearchParams(params);
     setFilters((current) => (filtersAreEqual(current, nextFilters) ? current : nextFilters));
     setSort((current) => (current === nextSort ? current : nextSort));
     setPage((current) => (current === nextPage ? current : nextPage));
+    setIsInitialized(true);
   }, [searchParams]);
+
+  // Sync state to URL params after initialization
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const params = createCatalogSearchParams(filters, sort, page);
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  }, [filters, sort, page, pathname, router, isInitialized]);
 
   const query = useModels({
     search: filters.search,
@@ -109,10 +112,9 @@ export default function CatalogPage() {
         ...current,
         capability: current.capability === capability ? "" : capability
       };
-      setPage(1);
-      updateSearchParams(next, sort, 1);
       return next;
     });
+    setPage(1);
   };
 
   const handleLicenseSelect = (license: string) => {
@@ -121,23 +123,20 @@ export default function CatalogPage() {
         ...current,
         license: current.license === license ? "" : license
       };
-      setPage(1);
-      updateSearchParams(next, sort, 1);
       return next;
     });
+    setPage(1);
   };
 
   const handleFilterPanelChange = (nextValues: ModelFilterValues) => {
     setFilters(nextValues);
     setPage(1);
-    updateSearchParams(nextValues, sort, 1);
   };
 
   const handleResetFilters = () => {
     setFilters({ ...defaultModelFilters });
     setSort(defaultCatalogSort);
     setPage(1);
-    updateSearchParams(defaultModelFilters, defaultCatalogSort, 1);
   };
 
   const handleCategoryChange = (category: string) => {
@@ -147,21 +146,18 @@ export default function CatalogPage() {
         ...current,
         category: nextCategory
       };
-      setPage(1);
-      updateSearchParams(next, sort, 1);
       return next;
     });
+    setPage(1);
   };
 
   const handleSortChange = (value: string) => {
     setSort(value);
     setPage(1);
-    updateSearchParams(filters, value, 1);
   };
 
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage);
-    updateSearchParams(filters, sort, nextPage);
   };
 
   const toggleModelSelection = (modelId: number) => {
@@ -201,9 +197,8 @@ export default function CatalogPage() {
     }
     if (page > totalPages) {
       setPage(totalPages);
-      updateSearchParams(filters, sort, totalPages);
     }
-  }, [filters, page, query.data, sort, totalPages, updateSearchParams]);
+  }, [page, query.data, totalPages]);
 
   const categoryTabs = useMemo(
     () => [{ value: "", label: "All" }, ...MODEL_CATEGORIES.map((item) => ({ value: item.value, label: item.label }))],
